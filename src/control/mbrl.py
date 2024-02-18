@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from core import DynamicsModel
 
 
 class MBRLLearner:
@@ -7,9 +8,18 @@ class MBRLLearner:
     A class for training a model-based reinforcement learning agent.
     """
 
-    def __init__(self):
-        # reward, dynamics, etc. should go here
-        pass
+    def __init__(self, state_dim, action_dim):
+        """
+        Parameters
+        ----------
+        state_dim : int
+            Dimension of the state space.
+        action_dim : int
+            Dimension of the action space.
+        """
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        print(f"Using device: {device}")
+        self.model = DynamicsModel(state_dim, action_dim).to(device)
 
     def train(self, env, num_episodes, episode_len):
         """
