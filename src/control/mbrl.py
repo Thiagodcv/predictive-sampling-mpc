@@ -8,9 +8,19 @@ class MBRLLearner:
     """
 
     def __init__(self):
+        # reward, dynamics, etc. should go here
         pass
 
     def train(self, env, num_episodes, episode_len):
+        """
+        Parameters
+        ----------
+        env : gym.Env
+        num_episodes : int
+            Number of episodes to train for.
+        episode_len : int
+            The length of each episode.
+        """
         replay_buffer = []
 
         for ep in range(num_episodes):
