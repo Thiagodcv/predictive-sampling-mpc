@@ -43,8 +43,8 @@ class MPC:
         rets = np.zeros(shape=num_traj)
         for t in range(horizon):
             for seq in range(num_traj):
-                next_state = 0  # self.model
-                rets[seq] = (gamma**t)*reward(state, action_seqs[seq, t])
+                rets[seq] = (gamma ** t) * reward(state, action_seqs[seq, t])
+                next_state = self.model(state, action_seqs[seq, t])
                 state = next_state
 
         # Return first action of optimal sequence
