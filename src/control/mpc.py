@@ -7,21 +7,11 @@ class MPC:
     A class containing several different sampling-based MPC algorithms.
     """
 
-    def __init__(self, model):
+    def __init__(self, model, num_traj, gamma, horizon, reward):
         """
         Parameters
         ----------
         model : torch.nn.Module
-        """
-        self.model = model
-
-    def random_shooting(self, state, past_actions, num_traj, gamma, horizon, reward):
-        """
-        Parameters
-        ----------
-        state: torch.Tensor
-        past_actions: torch.Tensor
-            A list containing the past three actions taken by the agent.
         num_traj: int
             Number of trajectories to sample.
         gamma: float
@@ -30,6 +20,20 @@ class MPC:
             Number of steps optimized over by the MPC controller.
         reward: function
             The instantaneous reward given at each timestep.
+        """
+        self.model = model
+        self.num_traj = num_traj
+        self.gamma = gamma
+        self.horizon = horizon
+        self.reward = reward
+
+    def random_shooting(self, state, past_actions):
+        """
+        Parameters
+        ----------
+        state: torch.Tensor
+        past_actions: torch.Tensor
+            A list containing the past three actions taken by the agent.
 
         Return
         ------
@@ -38,13 +42,13 @@ class MPC:
         # Sample actions
         mean_action = torch.mean(past_actions, dim=0)
         action_seqs = (torch.distributions.MultivariateNormal(mean_action, torch.eye(len(mean_action))).
-                       sample(sample_shape=torch.Size([num_traj, horizon])))
+                       sample(sample_shape=torch.Size([self.num_traj, self.horizon])))  # See if can parallelize this.
 
         # Evaluate action sequences
-        rets = torch.zeros(num_traj)
-        for t in range(horizon):
-            for seq in range(num_traj):
-                rets[seq] = (gamma ** t) * reward(state, action_seqs[seq, t, :])
+        rets = torch.zeros(self.num_traj)
+        for t in range(self.horizon):
+            for seq in range(self.num_traj):
+                rets[seq] = (self.gamma ** t) * self.reward(state, action_seqs[seq, t, :])
                 next_state = self.model.forward(torch.cat((state, action_seqs[seq, t, :]))) + state
                 state = next_state
 

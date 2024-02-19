@@ -21,8 +21,6 @@ class TestMPC(TestCase):
         """
         state_dim = 2
         action_dim = 2
-        model = DynamicsModel(state_dim, action_dim)
-        mpc = MPC(model)
 
         # input params
         state0 = torch.tensor([1., 1.])
@@ -36,4 +34,6 @@ class TestMPC(TestCase):
         def reward(state, action):
             return -torch.matmul(state, state) - torch.matmul(action, action)
 
-        mpc.random_shooting(state0, past_actions, num_traj, gamma, horizon, reward)
+        model = DynamicsModel(state_dim, action_dim)
+        mpc = MPC(model, num_traj, gamma, horizon, reward)
+        mpc.random_shooting(state0, past_actions)
