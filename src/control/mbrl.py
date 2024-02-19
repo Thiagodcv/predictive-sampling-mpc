@@ -91,3 +91,6 @@ class MBRLLearner:
         loss = self.loss(output, target)
         loss.backward()
         self.optimizer.step()
+
+    def get_past_3_actions(self):
+        return torch.cat((self.replay_buffer[-1][1], self.replay_buffer[-2][1], self.replay_buffer[-3][1]), 0)
