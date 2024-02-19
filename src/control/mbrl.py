@@ -2,8 +2,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from core import DynamicsModel
-from mpc import MPC
+from src.control.core import DynamicsModel
+from src.control.mpc import MPC
 
 
 class MBRLLearner:
@@ -11,7 +11,7 @@ class MBRLLearner:
     A class for training a model-based reinforcement learning agent.
     """
 
-    def __init__(self, state_dim, action_dim, env, num_episodes, episode_len, lr=1e-3, batch_size=16):
+    def __init__(self, state_dim, action_dim, env, num_episodes, episode_len, reward, lr=1e-3, batch_size=16):
         """
         Parameters
         ----------
@@ -24,6 +24,8 @@ class MBRLLearner:
             Number of episodes to train for.
         episode_len : int
             The length of each episode.
+        reward : function
+            The instantaneous reward function at each timestep.
         lr : float
             Learning rate for dynamics model.
         batch_size : int
@@ -47,14 +49,11 @@ class MBRLLearner:
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
 
         # MPC Parameters
-        self.policy = MPC(self.model)
         self.num_traj = 50
         self.gamma = 0.95
         self.horizon = 10
-
-        def reward(state, action):
-            return 0
         self.reward = reward
+        self.policy = MPC(self.model, self.num_traj, self.gamma, self.horizon, self.reward)
 
     def train(self):
         """
@@ -65,8 +64,7 @@ class MBRLLearner:
             self.update_dynamics()
             o, _ = self.env.reset()
             for t in range(self.episode_len):
-                action = self.policy.random_shooting(o, [self.replay_buffer[-i][1] for i in range(1, 4)],
-                                                     self.num_traj, self.gamma, self.horizon, self.reward)
+                action = self.policy.random_shooting(o, [self.replay_buffer[-i][1] for i in range(1, 4)])
                 next_o, reward, terminated, truncated, _ = self.env.step(action)
                 if terminated or truncated:
                     break
@@ -84,7 +82,7 @@ class MBRLLearner:
         batch_idx = torch.randint(len(self.replay_buffer), size=(self.batch_size,)).item()
         batch = self.replay_buffer[batch_idx]
         for i in range(len(batch)):
-            input[i].append(np.concatenate((batch[i][0], batch[i][1])))
+            input[i].append(torch.concatenate((batch[i][0], batch[i][1])))
             s_diff = batch[i][2] - batch[i][0]
             target.append(s_diff)
 
