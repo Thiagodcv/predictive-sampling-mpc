@@ -65,7 +65,7 @@ class MBRLLearner:
             self.update_dynamics()
             o, _ = self.env.reset()
             for t in range(self.episode_len):
-                action = self.policy.random_shooting(o, [self.replay_buffer[-i][1] for i in range(3)],
+                action = self.policy.random_shooting(o, [self.replay_buffer[-i][1] for i in range(1, 4)],
                                                      self.num_traj, self.gamma, self.horizon, self.reward)
                 next_o, reward, terminated, truncated, _ = self.env.step(action)
                 if terminated or truncated:
