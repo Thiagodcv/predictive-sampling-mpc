@@ -29,7 +29,6 @@ class DynamicsModel(nn.Module):
         )
 
     def forward(self, x):
-        x = self.flatten(x)
+        # x = self.flatten(x)
         output = self.linear_relu_stack(x)
         return output
-    

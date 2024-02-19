@@ -19,8 +19,8 @@ class MPC:
         """
         Parameters
         ----------
-        state: np.array
-        past_actions: list
+        state: torch.Tensor
+        past_actions: torch.Tensor
             A list containing the past three actions taken by the agent.
         num_traj: int
             Number of trajectories to sample.
@@ -33,20 +33,21 @@ class MPC:
 
         Return
         ------
-        np.array: The first action in the optimal sequence of actions.
+        torch.Tensor: The first action in the optimal sequence of actions.
         """
         # Sample actions
-        mean_action = np.mean(past_actions)
-        action_seqs = np.random.normal(loc=mean_action, scale=1, size=(num_traj, horizon))
+        mean_action = torch.mean(past_actions, dim=0)
+        action_seqs = (torch.distributions.MultivariateNormal(mean_action, torch.eye(len(mean_action))).
+                       sample(sample_shape=torch.Size([num_traj, horizon])))
 
         # Evaluate action sequences
-        rets = np.zeros(shape=num_traj)
+        rets = torch.zeros(num_traj)
         for t in range(horizon):
             for seq in range(num_traj):
-                rets[seq] = (gamma ** t) * reward(state, action_seqs[seq, t])
-                next_state = self.model(state, action_seqs[seq, t])
+                rets[seq] = (gamma ** t) * reward(state, action_seqs[seq, t, :])
+                next_state = self.model.forward(torch.cat((state, action_seqs[seq, t, :]))) + state
                 state = next_state
 
         # Return first action of optimal sequence
-        opt_seq_idx = np.argmax(rets)
-        return action_seqs[opt_seq_idx, 0]
+        opt_seq_idx = torch.argmax(rets)
+        return action_seqs[opt_seq_idx, 0, :]
