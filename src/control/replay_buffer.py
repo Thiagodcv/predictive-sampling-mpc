@@ -68,5 +68,9 @@ class ReplayBuffer:
                                              cov=0.01*np.eye(self.action_dim),
                                              size=size)
 
+    def get_last_3_actions_mean(self):
+        acts = np.array([self.data[-1].action, self.data[-2].action, self.data[-3].action])
+        return np.mean(acts, axis=0)
+
     def __len__(self):
         return len(self.data)
