@@ -43,13 +43,12 @@ class MPC:
         state = torch.from_numpy(state).float()
         mean_action = torch.from_numpy(past_action_mean).float()
         action_seqs = (torch.distributions.MultivariateNormal(mean_action, torch.eye(len(mean_action))).
-                       sample(sample_shape=torch.Size([self.num_traj, self.horizon])))  # TODO: See if can parallelize this.
+                       sample(sample_shape=torch.Size([self.num_traj, self.horizon])))
 
         # Evaluate action sequences
         rets = torch.zeros(self.num_traj)
         for t in range(self.horizon):
             for seq in range(self.num_traj):
-                # TODO: Must renormalize state
                 rets[seq] = (self.gamma ** t) * self.reward(state, action_seqs[seq, t, :])
                 input = torch.cat((state, action_seqs[seq, t, :]))
                 next_state = self.model.forward(input) + state

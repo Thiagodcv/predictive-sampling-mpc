@@ -36,6 +36,10 @@ class ReplayBuffer:
         self.data.append(transition)
 
     def sample(self, batch_size):
+        """
+        Sample a batch of experiences from replay. Note that the third element returned is
+        'next_state - state', NOT 'next_state'.
+        """
         transitions = random.sample(self.data, batch_size)
         batch = Transition(*zip(*transitions))
 
