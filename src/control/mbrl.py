@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from src.control.dynamics import DynamicsModel
 from src.control.mpc import MPC
-from replay_buffer import ReplayBuffer
+from src.control.replay_buffer import ReplayBuffer
 
 
 class MBRLLearner:
@@ -53,7 +53,7 @@ class MBRLLearner:
         self.gamma = 0.95
         self.horizon = 10
         self.reward = reward
-        self.policy = MPC(self.model, self.num_traj, self.gamma, self.horizon, self.reward)
+        self.policy = MPC(self.model, self.num_traj, self.gamma, self.horizon, self.reward, self.device)
 
         # Replay Buffer
         self.replay_buffer = ReplayBuffer(state_dim, action_dim)  # TODO: Pass in device as param
@@ -62,12 +62,18 @@ class MBRLLearner:
         """
         Train the MBRL agent.
         """
-
         for ep in range(self.num_episodes):
-            self.update_dynamics()
+            if self.replay_buffer.__len__() > self.batch_size:
+                self.update_dynamics()
             o, _ = self.env.reset()
+
             for t in range(self.episode_len):
-                action = self.policy.random_shooting(o, self.replay_buffer.get_last_3_actions_mean())
+                # Only start MPC once a full episode has passed
+                if ep > 1:
+                    action = self.policy.random_shooting(o, self.replay_buffer.get_last_3_actions_mean())
+                else:
+                    action = np.random.standard_normal(self.action_dim)
+
                 next_o, reward, terminated, truncated, _ = self.env.step(action)
                 if terminated or truncated:
                     break
@@ -77,12 +83,13 @@ class MBRLLearner:
 
     def update_dynamics(self):
         """
-        Update the dynamics model using sampled (s,a,s') triplets stored in replay_buffer.
+        Update the dynamics model using sampled (s,a,s'-s) triplets stored in replay_buffer.
         """
-        n_state, n_action, d_n_state = self.replay_buffer.sample(self.batch_size)
-        input = torch.cat((n_state, n_action), dim=1)
+        state, action, d_state = self.replay_buffer.sample(self.batch_size)
+        input = torch.from_numpy(np.concatenate((state, action), axis=1)).float().to(self.device)
+        target = torch.from_numpy(d_state).float().to(self.device)
         self.optimizer.zero_grad()
         output = self.model(input)
-        loss = self.loss(output, d_n_state)
+        loss = self.loss(output, target)
         loss.backward()
         self.optimizer.step()

@@ -21,8 +21,8 @@ class TestMBRL(TestCase):
         """
         Test to see if can run an example without crashing.
         """
-        state_dim = 2
-        action_dim = 2
+        state_dim = 4
+        action_dim = 1
         env = gym.make("InvertedPendulum-v4")
         num_episodes = 5
         episode_len = 5

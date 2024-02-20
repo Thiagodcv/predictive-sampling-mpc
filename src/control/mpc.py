@@ -7,7 +7,7 @@ class MPC:
     A class containing several different sampling-based MPC algorithms.
     """
 
-    def __init__(self, model, num_traj, gamma, horizon, reward):
+    def __init__(self, model, num_traj, gamma, horizon, reward, device=torch.device('cpu')):
         """
         Parameters
         ----------
@@ -20,12 +20,14 @@ class MPC:
             Number of steps optimized over by the MPC controller.
         reward: function
             The instantaneous reward given at each timestep.
+        device: torch.device
         """
         self.model = model
         self.num_traj = num_traj
         self.gamma = gamma
         self.horizon = horizon
         self.reward = reward
+        self.device = device
 
     def random_shooting(self, state, past_action_mean):
         """
@@ -37,16 +39,16 @@ class MPC:
 
         Return
         ------
-        torch.Tensor: The first action in the optimal sequence of actions.
+        np.array: The first action in the optimal sequence of actions.
         """
         # Sample actions
-        state = torch.from_numpy(state).float()
+        state = torch.from_numpy(state).float().to(self.device)
         mean_action = torch.from_numpy(past_action_mean).float()
         action_seqs = (torch.distributions.MultivariateNormal(mean_action, torch.eye(len(mean_action))).
-                       sample(sample_shape=torch.Size([self.num_traj, self.horizon])))
+                       sample(sample_shape=torch.Size([self.num_traj, self.horizon]))).to(self.device)
 
         # Evaluate action sequences
-        rets = torch.zeros(self.num_traj)
+        rets = torch.zeros(self.num_traj).to(self.device)
         for t in range(self.horizon):
             for seq in range(self.num_traj):
                 rets[seq] = (self.gamma ** t) * self.reward(state, action_seqs[seq, t, :])
@@ -56,4 +58,4 @@ class MPC:
 
         # Return first action of optimal sequence
         opt_seq_idx = torch.argmax(rets)
-        return action_seqs[opt_seq_idx, 0, :]
+        return action_seqs[opt_seq_idx, 0, :].cpu().detach().numpy()
