@@ -1,5 +1,5 @@
 from unittest import TestCase
-from src.control.core import DynamicsModel
+from src.control.dynamics import DynamicsModel
 from control.mpc import MPC
 from control.mbrl import MBRLLearner
 import numpy as np

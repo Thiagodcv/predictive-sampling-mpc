@@ -1,5 +1,5 @@
 from unittest import TestCase
-from src.control.core import DynamicsModel
+from src.control.dynamics import DynamicsModel
 from control.mpc import MPC
 import numpy as np
 import torch
@@ -23,10 +23,8 @@ class TestMPC(TestCase):
         action_dim = 2
 
         # input params
-        state0 = torch.tensor([1., 1.])
-        past_actions = torch.tensor([[0.5, 0.5],
-                                     [0.6, 0.6],
-                                     [0.7, 0.7]])
+        state0 = np.array([1., 1.])
+        past_action_mean = np.array([0.5, 0.5])
         num_traj = 10
         gamma = 0.99
         horizon = 5
@@ -36,4 +34,4 @@ class TestMPC(TestCase):
 
         model = DynamicsModel(state_dim, action_dim)
         mpc = MPC(model, num_traj, gamma, horizon, reward)
-        mpc.random_shooting(state0, past_actions)
+        mpc.random_shooting(state0, past_action_mean)

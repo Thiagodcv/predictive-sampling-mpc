@@ -2,8 +2,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from src.control.core import DynamicsModel
+from src.control.dynamics import DynamicsModel
 from src.control.mpc import MPC
+from replay_buffer import ReplayBuffer
 
 
 class MBRLLearner:
@@ -37,7 +38,6 @@ class MBRLLearner:
         self.env = env
         self.num_episodes = num_episodes
         self.episode_len = episode_len
-        self.replay_buffer = []
 
         # Dynamics Model Trainings Parameters
         self.lr = lr
@@ -55,6 +55,9 @@ class MBRLLearner:
         self.reward = reward
         self.policy = MPC(self.model, self.num_traj, self.gamma, self.horizon, self.reward)
 
+        # Replay Buffer
+        self.replay_buffer = ReplayBuffer(state_dim, action_dim)  # TODO: Pass in device as param
+
     def train(self):
         """
         Train the MBRL agent.
@@ -64,11 +67,11 @@ class MBRLLearner:
             self.update_dynamics()
             o, _ = self.env.reset()
             for t in range(self.episode_len):
-                action = self.policy.random_shooting(o, [self.replay_buffer[-i][1] for i in range(1, 4)])
+                action = self.policy.random_shooting(o, self.replay_buffer.get_last_3_actions_mean())
                 next_o, reward, terminated, truncated, _ = self.env.step(action)
                 if terminated or truncated:
                     break
-                self.replay_buffer.append((o, action, next_o))
+                self.replay_buffer.push(o, action, next_o)
                 o = next_o
             self.env.close()
 
@@ -76,21 +79,10 @@ class MBRLLearner:
         """
         Update the dynamics model using sampled (s,a,s') triplets stored in replay_buffer.
         """
-        input = []
-        target = []
-
-        batch_idx = torch.randint(len(self.replay_buffer), size=(self.batch_size,)).item()
-        batch = self.replay_buffer[batch_idx]
-        for i in range(len(batch)):
-            input[i].append(torch.concatenate((batch[i][0], batch[i][1])))
-            s_diff = batch[i][2] - batch[i][0]
-            target.append(s_diff)
-
+        n_state, n_action, d_n_state = self.replay_buffer.sample(self.batch_size)
+        input = torch.cat((n_state, n_action), dim=1)
         self.optimizer.zero_grad()
         output = self.model(input)
-        loss = self.loss(output, target)
+        loss = self.loss(output, d_n_state)
         loss.backward()
         self.optimizer.step()
-
-    def get_past_3_actions(self):
-        return torch.cat((self.replay_buffer[-1][1], self.replay_buffer[-2][1], self.replay_buffer[-3][1]), 0)

@@ -27,29 +27,32 @@ class MPC:
         self.horizon = horizon
         self.reward = reward
 
-    def random_shooting(self, state, past_actions):
+    def random_shooting(self, state, past_action_mean):
         """
         Parameters
         ----------
-        state: torch.Tensor
-        past_actions: torch.Tensor
-            A list containing the past three actions taken by the agent.
+        state: np.array
+        past_action_mean: np.array
+            The mean of the last 3 actions
 
         Return
         ------
         torch.Tensor: The first action in the optimal sequence of actions.
         """
         # Sample actions
-        mean_action = torch.mean(past_actions, dim=0)
+        state = torch.from_numpy(state).float()
+        mean_action = torch.from_numpy(past_action_mean).float()
         action_seqs = (torch.distributions.MultivariateNormal(mean_action, torch.eye(len(mean_action))).
-                       sample(sample_shape=torch.Size([self.num_traj, self.horizon])))  # See if can parallelize this.
+                       sample(sample_shape=torch.Size([self.num_traj, self.horizon])))  # TODO: See if can parallelize this.
 
         # Evaluate action sequences
         rets = torch.zeros(self.num_traj)
         for t in range(self.horizon):
             for seq in range(self.num_traj):
+                # TODO: Must renormalize state
                 rets[seq] = (self.gamma ** t) * self.reward(state, action_seqs[seq, t, :])
-                next_state = self.model.forward(torch.cat((state, action_seqs[seq, t, :]))) + state
+                input = torch.cat((state, action_seqs[seq, t, :]))
+                next_state = self.model.forward(input) + state
                 state = next_state
 
         # Return first action of optimal sequence
