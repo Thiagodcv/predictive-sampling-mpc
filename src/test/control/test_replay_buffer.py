@@ -25,7 +25,7 @@ class TestReplayBuffer(TestCase):
         action3 = np.array([1.5, 1.5])
         action4 = np.array([2., 2.])
 
-        replay_buffer = ReplayBuffer(state_dim=2, action_dim=2)
+        replay_buffer = ReplayBuffer(state_dim=2, action_dim=2, normalize=False)
         replay_buffer.push(state1, action1, state2)
         replay_buffer.push(state2, action2, state3)
         replay_buffer.push(state3, action3, state4)
@@ -48,7 +48,7 @@ class TestReplayBuffer(TestCase):
         action3 = np.array([2., 3.])
         action4 = np.array([3., 6.])
 
-        replay_buffer = ReplayBuffer(state_dim=2, action_dim=2)
+        replay_buffer = ReplayBuffer(state_dim=2, action_dim=2, normalize=False)
         replay_buffer.push(state1, action1, state2)
         replay_buffer.push(state2, action2, state3)
         replay_buffer.push(state3, action3, state4)

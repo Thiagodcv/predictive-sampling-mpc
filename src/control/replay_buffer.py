@@ -10,19 +10,20 @@ device = 'cpu'
 
 class ReplayBuffer:
 
-    def __init__(self, state_dim, action_dim, max_size=10000):
+    def __init__(self, state_dim, action_dim, max_size=10000, normalize=False):
         self.data = collections.deque([], maxlen=max_size)
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.state_mean, self.state_var = np.zeros(self.state_dim), np.ones(self.state_dim)
         self.action_mean, self.action_var = np.zeros(self.action_dim), np.ones(self.action_dim)
+        self.normalize = normalize
 
     def push(self, state, action, next_state):
         """
         Push (s, a, s') tuple to replay memory where 'state', 'action', and 'next_state' are not yet normalized.
         """
         # Update means and variances
-        if self.__len__() > 1:
+        if self.__len__() > 1 and self.normalize:
             self.state_mean = (self.__len__()*self.state_mean + state) / (self.__len__() + 1)
             self.action_mean = (self.__len__()*self.action_mean + action) / (self.__len__() + 1)
             self.state_var = ((self.__len__() - 1)*self.state_var +
@@ -43,6 +44,17 @@ class ReplayBuffer:
         next_state = np.array(batch.next_state)
 
         # Normalize data
+        if self.normalize:
+            n_state, n_action, d_n_state = self.normalize_tuple(state, action, next_state, batch_size)
+            return n_state, n_action, d_n_state
+
+        return state, action, next_state - state
+
+    def normalize_tuple(self, state, action, next_state, batch_size):
+        """
+        Normalize state, action, and next_state - state. Assume covariance matrix of action
+        and states have zero on the diagonal.
+        """
         n_state = (state - self.state_mean) @ np.diagflat(np.reciprocal(self.state_var))
         n_action = (action - self.action_mean) @ np.diagflat(np.reciprocal(self.action_var))
         n_next_state = (next_state - self.state_mean) @ np.diagflat(np.reciprocal(self.state_var))
@@ -71,6 +83,12 @@ class ReplayBuffer:
     def get_last_3_actions_mean(self):
         acts = np.array([self.data[-1].action, self.data[-2].action, self.data[-3].action])
         return np.mean(acts, axis=0)
+
+    def get_state_mean(self):
+        return self.state_mean
+
+    def get_state_var(self):
+        return self.state_var
 
     def __len__(self):
         return len(self.data)
