@@ -12,7 +12,7 @@ class MBRLLearner:
     A class for training a model-based reinforcement learning agent.
     """
 
-    def __init__(self, state_dim, action_dim, env, num_episodes, episode_len, reward, lr=1e-3, batch_size=16):
+    def __init__(self, state_dim, action_dim, env, num_episodes, episode_len, reward, terminate=None, lr=1e-3, batch_size=16):
         """
         Parameters
         ----------
@@ -27,6 +27,8 @@ class MBRLLearner:
             The length of each episode.
         reward : function
             The instantaneous reward function at each timestep.
+        terminate : function
+            For a given (s, a, t) tuple returns true if episode has ended.
         lr : float
             Learning rate for dynamics model.
         batch_size : int
@@ -43,18 +45,19 @@ class MBRLLearner:
         # Dynamics Model Trainings Parameters
         self.lr = lr
         self.batch_size = batch_size
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cpu")  # torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using device: {self.device}")
         self.model = DynamicsModel(self.state_dim, self.action_dim).to(self.device)
         self.loss = nn.MSELoss()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
 
         # MPC Parameters
-        self.num_traj = 20
+        self.num_traj = 100
         self.gamma = 0.99
-        self.horizon = 5
+        self.horizon = 10
         self.reward = reward
-        self.policy = MPC(self.model, self.num_traj, self.gamma, self.horizon, self.reward, self.device)
+        self.terminate = terminate
+        self.policy = MPC(self.model, self.num_traj, self.gamma, self.horizon, self.reward, self.terminate, self.device)
 
         # Replay Buffer
         self.replay_buffer = ReplayBuffer(state_dim, action_dim)  # TODO: Pass in device as param
