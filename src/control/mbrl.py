@@ -38,6 +38,7 @@ class MBRLLearner:
         self.env = env
         self.num_episodes = num_episodes
         self.episode_len = episode_len
+        self.eval_num = 5
 
         # Dynamics Model Trainings Parameters
         self.lr = lr
@@ -50,7 +51,7 @@ class MBRLLearner:
 
         # MPC Parameters
         self.num_traj = 50
-        self.gamma = 0.95
+        self.gamma = 0.99
         self.horizon = 10
         self.reward = reward
         self.policy = MPC(self.model, self.num_traj, self.gamma, self.horizon, self.reward, self.device)
@@ -63,6 +64,8 @@ class MBRLLearner:
         Train the MBRL agent.
         """
         for ep in range(self.num_episodes):
+            print("Episode {}".format(ep))
+
             if self.replay_buffer.__len__() > self.batch_size:
                 self.update_dynamics()
             o, _ = self.env.reset()
@@ -81,6 +84,9 @@ class MBRLLearner:
                 o = next_o
             self.env.close()
 
+            if ep % self.eval_num == 0:
+                self.eval_model()
+
     def update_dynamics(self):
         """
         Update the dynamics model using sampled (s,a,s'-s) triplets stored in replay_buffer.
@@ -93,3 +99,19 @@ class MBRLLearner:
         loss = self.loss(output, target)
         loss.backward()
         self.optimizer.step()
+
+    def eval_model(self):
+        o, _ = self.env.reset()
+        ret = 0
+        for t in range(self.episode_len):
+            action = self.policy.random_shooting(o, self.replay_buffer.get_last_3_actions_mean())
+            next_o, reward, terminated, truncated, _ = self.env.step(action)
+            ret += self.gamma**t * reward
+            if terminated or truncated:
+                break
+            o = next_o
+        self.env.close()
+
+        print("----------------------------------------")
+        print("Model Evaluation: ret = {}".format(ret))
+        print("----------------------------------------")
