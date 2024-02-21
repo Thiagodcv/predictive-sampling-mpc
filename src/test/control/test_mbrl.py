@@ -29,7 +29,7 @@ class TestMBRL(TestCase):
         batch_size = 32
 
         def reward(state, action):
-            return torch.tensor(state[0] < 0.2)
+            return -state[0]**2 - state[3]**2
 
         learner = MBRLLearner(state_dim=state_dim, action_dim=action_dim, env=env,
                               num_episodes=num_episodes, episode_len=episode_len, reward=reward,

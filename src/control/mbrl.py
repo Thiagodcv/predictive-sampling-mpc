@@ -50,9 +50,9 @@ class MBRLLearner:
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
 
         # MPC Parameters
-        self.num_traj = 50
+        self.num_traj = 20
         self.gamma = 0.99
-        self.horizon = 10
+        self.horizon = 5
         self.reward = reward
         self.policy = MPC(self.model, self.num_traj, self.gamma, self.horizon, self.reward, self.device)
 
