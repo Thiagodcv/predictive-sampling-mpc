@@ -16,7 +16,6 @@ class DynamicsModel(nn.Module):
         """
         # super(DynamicsModel, self).__init__()
         super().__init__()
-        self.flatten = nn.Flatten()
         self.state_dim = state_dim
         self.action_dim = action_dim
 
@@ -29,6 +28,10 @@ class DynamicsModel(nn.Module):
         )
 
     def forward(self, x):
-        # x = self.flatten(x)
         output = self.linear_relu_stack(x)
         return output
+
+    def forward_np(self, x):
+        x = torch.from_numpy(x).float()
+        output = self.forward(x)
+        return output.detach().numpy()

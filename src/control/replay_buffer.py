@@ -2,10 +2,8 @@ import random
 import collections
 
 import numpy as np
-import torch
 
 Transition = collections.namedtuple('Transition', ('state', 'action', 'next_state'))
-device = 'cpu'
 
 
 class ReplayBuffer:
@@ -69,9 +67,6 @@ class ReplayBuffer:
         n_action += self.sample_action_gaussian(batch_size)
         d_n_state += self.sample_state_gaussian(batch_size)
 
-        # n_state = torch.tensor(n_state, device=device, dtype=torch.float32)
-        # n_action = torch.tensor(n_action, device=device, dtype=torch.float32)
-        # d_n_state = torch.tensor(d_n_state, device=device, dtype=torch.float32)
         return n_state, n_action, d_n_state
 
     def sample_state_gaussian(self, size):
@@ -83,10 +78,6 @@ class ReplayBuffer:
         return np.random.multivariate_normal(mean=np.zeros(self.action_dim),
                                              cov=0.01*np.eye(self.action_dim),
                                              size=size)
-
-    def get_last_3_actions_mean(self):
-        acts = np.array([self.data[-1].action, self.data[-2].action, self.data[-3].action])
-        return np.mean(acts, axis=0)
 
     def get_state_mean(self):
         return self.state_mean
