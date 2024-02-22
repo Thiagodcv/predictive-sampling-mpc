@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 
 
 class MPC:
@@ -7,7 +6,7 @@ class MPC:
     A class containing several different sampling-based MPC algorithms.
     """
 
-    def __init__(self, model, num_traj, gamma, horizon, reward, terminate=None, device=torch.device('cpu')):
+    def __init__(self, model, num_traj, gamma, horizon, reward, terminate=None):
         """
         Parameters
         ----------
@@ -22,7 +21,6 @@ class MPC:
             The instantaneous reward given at each timestep.
         terminate : function
              For a given (s, a, t) tuple returns true if episode has ended.
-        device: torch.device
         """
         self.model = model
         self.num_traj = num_traj
@@ -30,41 +28,32 @@ class MPC:
         self.horizon = horizon
         self.reward = reward
         self.terminate = terminate
-        self.device = device
 
-    def random_shooting(self, state, past_action_mean):
+    def random_shooting(self, state0):
         """
         Parameters
         ----------
-        state: np.array
-        past_action_mean: np.array
-            The mean of the last 3 actions
+        state0: np.array
 
         Return
         ------
         np.array: The first action in the optimal sequence of actions.
         """
         # Sample actions
-        state0 = torch.from_numpy(state).float().to(self.device)
-        # TODO: Ensure mean actions don't carry across episodes.
-        # mean_action = torch.from_numpy(past_action_mean).float()
-        # action_seqs = (torch.distributions.MultivariateNormal(mean_action, torch.eye(len(mean_action))).
-        #                sample(sample_shape=torch.Size([self.num_traj, self.horizon]))).to(self.device)
-
-        action_seqs = torch.FloatTensor(self.num_traj, self.horizon, 1).uniform_(-3, 3).to(self.device)
+        action_seqs = np.random.uniform(low=-3.0, high=3.0, size=(self.num_traj, self.horizon, 1))
 
         # Evaluate action sequences
-        rets = torch.zeros(self.num_traj).to(self.device)
+        rets = np.zeros(self.num_traj)
         for seq in range(self.num_traj):
-            state = state0.detach().clone().to(self.device)
+            state = np.copy(state0)
             for t in range(self.horizon):
                 rets[seq] = (self.gamma ** t) * self.reward(state, action_seqs[seq, t, :])
                 if self.terminate is not None and self.terminate(state, action_seqs[seq, t, :], t):
                     break
-                input = torch.cat((state, action_seqs[seq, t, :]))
-                next_state = self.model.forward(input) + state
+                input = np.concatenate((state, action_seqs[seq, t, :]))
+                next_state = self.model.forward_np(input) + state
                 state = next_state
 
         # Return first action of optimal sequence
-        opt_seq_idx = torch.argmax(rets)
-        return action_seqs[opt_seq_idx, 0, :].cpu().detach().numpy()
+        opt_seq_idx = np.argmax(rets)
+        return action_seqs[opt_seq_idx, 0, :]

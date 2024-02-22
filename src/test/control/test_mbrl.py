@@ -37,7 +37,7 @@ class TestMBRL(TestCase):
                 return True
             # If absolute value of vertical angle between pole and cart is greater than 0.2,
             # terminate episode
-            elif state[1].item() > 0.2 or state[1].item() < -0.2:
+            elif state[1] > 0.2 or state[1] < -0.2:
                 return True
             else:
                 return False

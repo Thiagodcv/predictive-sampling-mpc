@@ -57,10 +57,10 @@ class MBRLLearner:
         self.horizon = 10
         self.reward = reward
         self.terminate = terminate
-        self.policy = MPC(self.model, self.num_traj, self.gamma, self.horizon, self.reward, self.terminate, self.device)
+        self.policy = MPC(self.model, self.num_traj, self.gamma, self.horizon, self.reward, self.terminate)
 
         # Replay Buffer
-        self.replay_buffer = ReplayBuffer(state_dim, action_dim)  # TODO: Pass in device as param
+        self.replay_buffer = ReplayBuffer(state_dim, action_dim)
 
     def train(self):
         """
@@ -76,7 +76,7 @@ class MBRLLearner:
             for t in range(self.episode_len):
                 # Only start MPC once a full episode has passed
                 if ep > 1:
-                    action = self.policy.random_shooting(o, self.replay_buffer.get_last_3_actions_mean())
+                    action = self.policy.random_shooting(o)
                 else:
                     action = np.random.standard_normal(self.action_dim)
 
@@ -107,7 +107,7 @@ class MBRLLearner:
         o, _ = self.env.reset()
         ret = 0
         for t in range(self.episode_len):
-            action = self.policy.random_shooting(o, self.replay_buffer.get_last_3_actions_mean())
+            action = self.policy.random_shooting(o)
             next_o, reward, terminated, truncated, _ = self.env.step(action)
             ret += self.gamma**t * reward
             if terminated or truncated:
