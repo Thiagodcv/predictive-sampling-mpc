@@ -17,16 +17,16 @@ class TestMBRL(TestCase):
     def tearDown(self):
         pass
 
-    def test_mbrl(self):
+    def test_mbrl_inverted_pendulum(self):
         """
         Test to see if can run an example without crashing.
         """
         state_dim = 4
         action_dim = 1
         env = gym.make("InvertedPendulum-v4")
-        num_episodes = 4000
+        num_episodes = 5000
         episode_len = 100
-        batch_size = 32
+        batch_size = 256
 
         def reward(state, action):
             return 1
@@ -46,3 +46,25 @@ class TestMBRL(TestCase):
                               num_episodes=num_episodes, episode_len=episode_len, reward=reward,
                               terminate=terminate, batch_size=batch_size)
         learner.train()
+
+    # def test_mbrl_ant(self):
+    #     """
+    #     Test to see if can run an example without crashing.
+    #     """
+    #     state_dim = 27
+    #     action_dim = 8
+    #     env = gym.make("Ant-v4")
+    #     num_episodes = 10000
+    #     episode_len = 1000
+    #     batch_size = 256
+    #
+    #     def reward(state, action):
+    #         pass
+    #
+    #     def terminate(state, action, t):
+    #         pass
+    #
+    #     learner = MBRLLearner(state_dim=state_dim, action_dim=action_dim, env=env,
+    #                           num_episodes=num_episodes, episode_len=episode_len, reward=reward,
+    #                           terminate=terminate, batch_size=batch_size)
+    #     learner.train()

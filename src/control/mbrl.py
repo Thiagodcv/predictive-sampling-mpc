@@ -12,7 +12,8 @@ class MBRLLearner:
     A class for training a model-based reinforcement learning agent.
     """
 
-    def __init__(self, state_dim, action_dim, env, num_episodes, episode_len, reward, terminate=None, lr=1e-3, batch_size=16):
+    def __init__(self, state_dim, action_dim, env, num_episodes, episode_len,
+                 reward, terminate=None, lr=1e-3, batch_size=16, train_buffer_len=2000):
         """
         Parameters
         ----------
@@ -33,6 +34,8 @@ class MBRLLearner:
             Learning rate for dynamics model.
         batch_size : int
             Batch size for dynamics model training.
+        train_buffer_len : int
+            Number of episodes in the beginning of training where MPC not utilized (random action taken)
         """
         # RL Training Parameters
         self.state_dim = state_dim
@@ -41,6 +44,7 @@ class MBRLLearner:
         self.num_episodes = num_episodes
         self.episode_len = episode_len
         self.eval_num = 5
+        self.train_buffer_len = train_buffer_len
 
         # Dynamics Model Trainings Parameters
         self.lr = lr
@@ -75,10 +79,10 @@ class MBRLLearner:
 
             for t in range(self.episode_len):
                 # Only start MPC once a full episode has passed
-                if ep > 1:
+                if ep > self.train_buffer_len:
                     action = self.policy.random_shooting(o)
                 else:
-                    action = np.random.standard_normal(self.action_dim)
+                    action = np.random.uniform(low=-3.0, high=3.0, size=(1,))
 
                 next_o, reward, terminated, truncated, _ = self.env.step(action)
                 if terminated or truncated:

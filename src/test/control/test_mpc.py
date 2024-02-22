@@ -1,6 +1,7 @@
 from unittest import TestCase
 from src.control.dynamics import DynamicsModel
 from control.mpc import MPC
+import gymnasium as gym
 import numpy as np
 import torch
 import torch.nn as nn
@@ -19,19 +20,40 @@ class TestMPC(TestCase):
         """
         Test to see if can run an example without crashing.
         """
-        state_dim = 2
-        action_dim = 2
+        PATH = "C:/Users/thiag/Git/random-shooting-mpc/models/good_model.pt"
+        state_dim = 4
+        action_dim = 1
 
         # input params
-        state0 = np.array([1., 1.])
-        past_action_mean = np.array([0.5, 0.5])
-        num_traj = 10
+        num_traj = 1000
         gamma = 0.99
-        horizon = 5
+        horizon = 10
+
+        env = gym.make("InvertedPendulum-v4")  # ,render_mode="human")
+        model = DynamicsModel(state_dim, action_dim)
+        model.load_state_dict(torch.load(PATH))
 
         def reward(state, action):
-            return -torch.matmul(state, state) - torch.matmul(action, action)
+            return 1
 
-        model = DynamicsModel(state_dim, action_dim)
-        mpc = MPC(model, num_traj, gamma, horizon, reward)
-        mpc.random_shooting(state0, past_action_mean)
+        def terminate(state, action, t):
+            # If episode is at t>=1000, terminate episode
+            if t >= 1000:
+                return True
+            # If absolute value of vertical angle between pole and cart is greater than 0.2,
+            # terminate episode
+            elif state[1] > 0.2 or state[1] < -0.2:
+                return True
+            else:
+                return False
+
+        mpc = MPC(model, num_traj, gamma, horizon, reward, terminate)
+
+        state, _ = env.reset()
+        for t in range(100):
+            print(t)
+            action = mpc.random_shooting(state)
+            next_state, reward, terminated, truncated, _ = env.step(action)
+            if terminated or truncated:
+                break
+            state = next_state

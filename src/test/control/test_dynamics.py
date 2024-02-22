@@ -35,6 +35,9 @@ class TestDynamics(TestCase):
         episode_len = 100
         batch_size = 256
 
+        # Save model
+        PATH = "C:/Users/thiag/Git/random-shooting-mpc/models/good_model.pt"
+
         def eval_nn(h):
             # Simulate states in environment with zero action
             o, _ = env.reset()
@@ -103,3 +106,4 @@ class TestDynamics(TestCase):
         print("Average score on last 10 evaluations:")
         print(np.mean(nn_evals[-10:]))
         print("+++++++++++++++++++++++++")
+        torch.save(model.state_dict(), PATH)
