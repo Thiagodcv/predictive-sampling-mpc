@@ -40,14 +40,15 @@ class MPC:
         np.array: The first action in the optimal sequence of actions.
         """
         # Sample actions
-        action_seqs = np.random.uniform(low=-3.0, high=3.0, size=(self.num_traj, self.horizon, 1))
+        action_seqs = np.random.binomial(n=1, p=0.5, size=(self.num_traj, self.horizon, 1))  # cartpole
+        # action_seqs = np.random.uniform(low=-3.0, high=3.0, size=(self.num_traj, self.horizon, 1))  # pendulum
 
         # Evaluate action sequences
         rets = np.zeros(self.num_traj)
         for seq in range(self.num_traj):
             state = np.copy(state0)
             for t in range(self.horizon):
-                rets[seq] = (self.gamma ** t) * self.reward(state, action_seqs[seq, t, :])
+                rets[seq] += (self.gamma ** t) * self.reward(state, action_seqs[seq, t, :])
                 if self.terminate is not None and self.terminate(state, action_seqs[seq, t, :], t):
                     break
                 input = np.concatenate((state, action_seqs[seq, t, :]))
