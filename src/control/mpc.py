@@ -46,6 +46,7 @@ class MPC:
         """
         # Sample actions
         state0 = torch.from_numpy(state).float().to(self.device)
+        # TODO: Ensure mean actions don't carry across episodes.
         # mean_action = torch.from_numpy(past_action_mean).float()
         # action_seqs = (torch.distributions.MultivariateNormal(mean_action, torch.eye(len(mean_action))).
         #                sample(sample_shape=torch.Size([self.num_traj, self.horizon]))).to(self.device)

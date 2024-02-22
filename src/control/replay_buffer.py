@@ -69,9 +69,9 @@ class ReplayBuffer:
         n_action += self.sample_action_gaussian(batch_size)
         d_n_state += self.sample_state_gaussian(batch_size)
 
-        n_state = torch.tensor(n_state, device=device, dtype=torch.float32)
-        n_action = torch.tensor(n_action, device=device, dtype=torch.float32)
-        d_n_state = torch.tensor(d_n_state, device=device, dtype=torch.float32)
+        # n_state = torch.tensor(n_state, device=device, dtype=torch.float32)
+        # n_action = torch.tensor(n_action, device=device, dtype=torch.float32)
+        # d_n_state = torch.tensor(d_n_state, device=device, dtype=torch.float32)
         return n_state, n_action, d_n_state
 
     def sample_state_gaussian(self, size):
@@ -93,6 +93,12 @@ class ReplayBuffer:
 
     def get_state_var(self):
         return self.state_var
+
+    def get_action_mean(self):
+        return self.action_mean
+
+    def get_action_var(self):
+        return self.action_var
 
     def __len__(self):
         return len(self.data)
