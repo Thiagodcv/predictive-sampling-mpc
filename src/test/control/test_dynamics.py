@@ -20,7 +20,7 @@ class TestDynamics(TestCase):
     def test_dynamics_training(self):
         state_dim = 4
         action_dim = 1
-        lr = 1e-3
+        lr = 1e-4
         model = DynamicsModel(state_dim=state_dim, action_dim=action_dim)
         replay_buffer = ReplayBuffer(state_dim=state_dim,
                                      action_dim=action_dim,

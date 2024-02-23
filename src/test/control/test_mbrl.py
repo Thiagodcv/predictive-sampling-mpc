@@ -47,24 +47,33 @@ class TestMBRL(TestCase):
                               terminate=terminate, batch_size=batch_size)
         learner.train()
 
-    # def test_mbrl_ant(self):
-    #     """
-    #     Test to see if can run an example without crashing.
-    #     """
-    #     state_dim = 27
-    #     action_dim = 8
-    #     env = gym.make("Ant-v4")
-    #     num_episodes = 10000
-    #     episode_len = 1000
-    #     batch_size = 256
-    #
-    #     def reward(state, action):
-    #         pass
-    #
-    #     def terminate(state, action, t):
-    #         pass
-    #
-    #     learner = MBRLLearner(state_dim=state_dim, action_dim=action_dim, env=env,
-    #                           num_episodes=num_episodes, episode_len=episode_len, reward=reward,
-    #                           terminate=terminate, batch_size=batch_size)
-    #     learner.train()
+    def test_mbrl_cartpole(self):
+        """
+        Test to see if can run an example without crashing.
+        """
+        state_dim = 4
+        action_dim = 1
+        env = gym.make("CartPole-v1")
+        num_episodes = 5000
+        episode_len = 200
+        batch_size = 256
+        train_buffer_len = 2000
+
+        def reward(state, action):
+            return 1
+
+        def terminate(state, action, t):
+            if t >= 500:
+                return True
+            elif state[0] > 2.4 or state[0] < -2.4:
+                return True
+            elif state[2] > 0.2 or state[2] < -0.2:
+                return True
+            else:
+                return False
+
+        learner = MBRLLearner(state_dim=state_dim, action_dim=action_dim, env=env,
+                              num_episodes=num_episodes, episode_len=episode_len, reward=reward,
+                              terminate=terminate, batch_size=batch_size, train_buffer_len=train_buffer_len)
+        learner.train()
+

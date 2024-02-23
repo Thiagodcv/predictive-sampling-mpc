@@ -57,3 +57,34 @@ class TestMPC(TestCase):
             if terminated or truncated:
                 break
             state = next_state
+
+    def test_find_discrete_optimal_action(self):
+        """
+        Test to see if random shooting mpc can find optimal set of actions.
+        Note that the action space = {0, 1}.
+        """
+        PATH = "C:/Users/thiag/Git/random-shooting-mpc/models/good_model.pt"
+        # input params
+        num_traj = 100
+        gamma = 1e-5
+        horizon = 20
+
+        # Defining the model just to get the code to run
+        state_dim = 4
+        action_dim = 1
+        model = DynamicsModel(state_dim, action_dim)
+        model.load_state_dict(torch.load(PATH))
+
+        # Defining the reward
+        optimal_action = 1
+
+        def reward(state, action):
+            return -(action.item() - optimal_action)**2
+
+        mpc = MPC(model, num_traj, gamma, horizon, reward)
+
+        state_dummy = np.zeros(state_dim)
+        for i in range(100):
+            print("action: ", mpc.random_shooting(state_dummy))
+
+
