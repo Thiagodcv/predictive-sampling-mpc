@@ -49,7 +49,7 @@ class MBRLLearner:
         self.env = env
         self.num_episodes = num_episodes
         self.episode_len = episode_len
-        self.eval_num = 5
+        self.eval_num = 1
         self.train_buffer_len = train_buffer_len
 
         # Dynamics Model Trainings Parameters
@@ -63,9 +63,9 @@ class MBRLLearner:
         self.save_name = save_name
 
         # MPC Parameters
-        self.num_traj = 50
+        self.num_traj = 10  # 50
         self.gamma = 0.99
-        self.horizon = 15
+        self.horizon = 5  # 15
         self.reward = reward
         self.terminate = terminate
         self.policy = MPC(self.model, self.num_traj, self.gamma, self.horizon, self.reward, self.terminate)
@@ -122,14 +122,33 @@ class MBRLLearner:
         self.optimizer.step()
 
     def eval_model(self):
-        import gymnasium as gym
-        env = gym.make("CartPole-v1", render_mode='human')
-        o, _ = env.reset()
+
+        o, _ = self.env.reset()
         ret = 0
         for t in range(self.episode_len):
             action = self.policy.random_shooting(o)
-            next_o, reward, terminated, truncated, _ = env.step(action)
+            next_o, reward, terminated, truncated, _ = self.env.step(action)
             ret += self.gamma**t * reward
+            if terminated or truncated:
+                break
+            o = next_o
+        self.env.close()
+
+        print("----------------------------------------")
+        print("Model Evaluation: ret = {}".format(ret))
+        print("----------------------------------------")
+
+    @staticmethod
+    def static_eval_model(env, episode_len, policy, gamma):
+        """
+        A static version of eval_model.
+        """
+        o, _ = env.reset()
+        ret = 0
+        for t in range(episode_len):
+            action = policy.random_shooting(o)
+            next_o, reward, terminated, truncated, _ = env.step(action)
+            ret += gamma**t * reward
             if terminated or truncated:
                 break
             o = next_o
@@ -138,3 +157,4 @@ class MBRLLearner:
         print("----------------------------------------")
         print("Model Evaluation: ret = {}".format(ret))
         print("----------------------------------------")
+
