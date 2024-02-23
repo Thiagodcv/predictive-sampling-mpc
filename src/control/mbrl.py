@@ -68,9 +68,9 @@ class MBRLLearner:
         self.save_name = save_name
 
         # MPC Parameters
-        self.num_traj = 10  # 50
+        self.num_traj = 25  # 50
         self.gamma = 0.99
-        self.horizon = 5  # 15
+        self.horizon = 10  # 15
         self.reward = reward
         self.terminate = terminate
         self.policy = MPC(self.model, self.num_traj, self.gamma, self.horizon, self.reward, self.terminate)

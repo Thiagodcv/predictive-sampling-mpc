@@ -40,7 +40,7 @@ class DynamicsModel(nn.Module):
         x = np.concatenate((state, action))
         x_torch = torch.from_numpy(x).float()
         output = self.forward(x_torch).detach().numpy() + state
-        if self.normalize is not None:
+        if self.normalize is True:
             output = output @ np.diagflat(self.state_var) + self.state_mean
         return output
 
