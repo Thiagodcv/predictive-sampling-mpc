@@ -16,7 +16,7 @@ class MBRLLearner:
 
     def __init__(self, state_dim, action_dim, env, num_episodes, episode_len,
                  reward, terminate=None, lr=1e-3, batch_size=16, train_buffer_len=2000,
-                 save_name=None):
+                 save_name=None, normalize_data=False):
         """
         Parameters
         ----------
@@ -41,6 +41,8 @@ class MBRLLearner:
             Number of episodes in the beginning of training where MPC not utilized (random action taken).
         save_name : str
             The name of the trained dynamics model saved.
+        normalize_data : boolean
+            If true, normalizes the data dynamics mode is trained on.
         """
         # RL Training Parameters
         self.state_dim = state_dim
@@ -51,12 +53,18 @@ class MBRLLearner:
         self.eval_num = 1
         self.train_buffer_len = train_buffer_len
 
+        # Replay Buffer
+        self.replay_buffer = ReplayBuffer(state_dim, action_dim, normalize=normalize_data)
+
         # Dynamics Model Trainings Parameters
         self.lr = lr
         self.batch_size = batch_size
         self.device = torch.device("cpu")  # torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using device: {self.device}")
-        self.model = DynamicsModel(self.state_dim, self.action_dim).to(self.device)
+        if normalize_data:
+            self.model = DynamicsModel(self.state_dim, self.action_dim, self.replay_buffer).to(self.device)
+        else:
+            self.model = DynamicsModel(self.state_dim, self.action_dim).to(self.device)
         self.loss = nn.MSELoss()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         self.save_name = save_name
@@ -68,9 +76,6 @@ class MBRLLearner:
         self.reward = reward
         self.terminate = terminate
         self.policy = MPC(self.model, self.num_traj, self.gamma, self.horizon, self.reward, self.terminate)
-
-        # Replay Buffer
-        self.replay_buffer = ReplayBuffer(state_dim, action_dim)
 
     def train(self):
         """
