@@ -1,11 +1,5 @@
 from unittest import TestCase
-from src.control.dynamics import DynamicsModel
-from control.mpc import MPC
 from control.mbrl import MBRLLearner
-import numpy as np
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import gymnasium as gym
 
 
@@ -54,10 +48,10 @@ class TestMBRL(TestCase):
         state_dim = 4
         action_dim = 1
         env = gym.make("CartPole-v1")
-        num_episodes = 5000
+        num_episodes = 2000
         episode_len = 200
         batch_size = 256
-        train_buffer_len = 2000
+        train_buffer_len = num_episodes  # Right now have it set to only supervised learning
 
         def reward(state, action):
             return 1
@@ -74,6 +68,6 @@ class TestMBRL(TestCase):
 
         learner = MBRLLearner(state_dim=state_dim, action_dim=action_dim, env=env,
                               num_episodes=num_episodes, episode_len=episode_len, reward=reward,
-                              terminate=terminate, batch_size=batch_size, train_buffer_len=train_buffer_len)
+                              terminate=terminate, batch_size=batch_size, train_buffer_len=train_buffer_len,
+                              save_name="testv7")
         learner.train()
-

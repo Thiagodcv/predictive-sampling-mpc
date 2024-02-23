@@ -1,7 +1,6 @@
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from src.control.dynamics import DynamicsModel
 from src.control.mpc import MPC
 from src.control.replay_buffer import ReplayBuffer
