@@ -83,8 +83,7 @@ class MBRLLearner:
             print("Episode {}".format(ep))
 
             if self.replay_buffer.__len__() > self.batch_size:
-                self.model.update_state_var(self.replay_buffer.get_state_var())
-                self.model.update_state_mean(self.replay_buffer.get_state_mean())
+                self.update_model_statistics()
                 self.update_dynamics()
 
             o, _ = self.env.reset()
@@ -162,3 +161,8 @@ class MBRLLearner:
         print("Model Evaluation: ret = {}".format(ret))
         print("----------------------------------------")
 
+    def update_model_statistics(self):
+        self.model.update_state_var(self.replay_buffer.get_state_var())
+        self.model.update_state_mean(self.replay_buffer.get_state_mean())
+        self.model.update_action_var(self.replay_buffer.get_action_var())
+        self.model.update_action_mean(self.replay_buffer.get_action_mean())
