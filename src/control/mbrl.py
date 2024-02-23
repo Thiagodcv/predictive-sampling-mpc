@@ -5,6 +5,9 @@ import torch.nn.functional as F
 from src.control.dynamics import DynamicsModel
 from src.control.mpc import MPC
 from src.control.replay_buffer import ReplayBuffer
+import os
+from datetime import datetime
+from src.constants import MODELS_PATH
 
 
 class MBRLLearner:
@@ -13,7 +16,8 @@ class MBRLLearner:
     """
 
     def __init__(self, state_dim, action_dim, env, num_episodes, episode_len,
-                 reward, terminate=None, lr=1e-3, batch_size=16, train_buffer_len=2000):
+                 reward, terminate=None, lr=1e-3, batch_size=16, train_buffer_len=2000,
+                 save_name=None):
         """
         Parameters
         ----------
@@ -35,7 +39,9 @@ class MBRLLearner:
         batch_size : int
             Batch size for dynamics model training.
         train_buffer_len : int
-            Number of episodes in the beginning of training where MPC not utilized (random action taken)
+            Number of episodes in the beginning of training where MPC not utilized (random action taken).
+        save_name : str
+            The name of the trained dynamics model saved.
         """
         # RL Training Parameters
         self.state_dim = state_dim
@@ -43,7 +49,7 @@ class MBRLLearner:
         self.env = env
         self.num_episodes = num_episodes
         self.episode_len = episode_len
-        self.eval_num = 1
+        self.eval_num = 5
         self.train_buffer_len = train_buffer_len
 
         # Dynamics Model Trainings Parameters
@@ -54,6 +60,7 @@ class MBRLLearner:
         self.model = DynamicsModel(self.state_dim, self.action_dim).to(self.device)
         self.loss = nn.MSELoss()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
+        self.save_name = save_name
 
         # MPC Parameters
         self.num_traj = 50
@@ -92,12 +99,14 @@ class MBRLLearner:
                 o = next_o
             self.env.close()
 
-            if ep % self.eval_num == 0 and ep > self.train_buffer_len:
+            if ep % self.eval_num == 0 and ep > self.train_buffer_len - 1:
                 self.eval_model()
 
-            # if ep == 2020:
-            #     PATH = "C:/Users/thiag/Git/random-shooting-mpc/models/good_model.pt"
-            #     torch.save(self.model.state_dict(), PATH)
+        # Save trained dynamics model
+        if self.save_name is None:
+            now = datetime.now()
+            self.save_name = now.strftime("%Y%m%d-%H%M%S")
+        torch.save(self.model.state_dict(), os.path.join(MODELS_PATH, self.save_name + ".pt"))
 
     def update_dynamics(self):
         """
