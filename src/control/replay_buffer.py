@@ -57,9 +57,9 @@ class ReplayBuffer:
         Normalize state, action, and next_state - state. Assume covariance matrix of action
         and states have zero on the diagonal.
         """
-        n_state = (state - self.state_mean) @ np.diagflat(np.reciprocal(self.state_var))
-        n_action = (action - self.action_mean) @ np.diagflat(np.reciprocal(self.action_var))
-        n_next_state = (next_state - self.state_mean) @ np.diagflat(np.reciprocal(self.state_var))
+        n_state = (state - self.state_mean) @ np.diagflat(np.reciprocal(np.sqrt(self.state_var)))
+        n_action = (action - self.action_mean) @ np.diagflat(np.reciprocal(np.sqrt(self.action_var)))
+        n_next_state = (next_state - self.state_mean) @ np.diagflat(np.reciprocal(np.sqrt(self.state_var)))
         d_n_state = n_next_state - n_state
 
         # Add zero-mean gaussian noise to tuple variables

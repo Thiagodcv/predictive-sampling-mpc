@@ -16,7 +16,7 @@ class MBRLLearner:
 
     def __init__(self, state_dim, action_dim, env, num_episodes, episode_len,
                  reward, terminate=None, lr=1e-3, batch_size=16, train_buffer_len=2000,
-                 save_name=None):
+                 save_name=None, normalize=False):
         """
         Parameters
         ----------
@@ -41,6 +41,8 @@ class MBRLLearner:
             Number of episodes in the beginning of training where MPC not utilized (random action taken).
         save_name : str
             The name of the trained dynamics model saved.
+        normalize : boolean
+            If true, normalizes the data dynamics mode is trained on.
         """
         # RL Training Parameters
         self.state_dim = state_dim
@@ -50,27 +52,28 @@ class MBRLLearner:
         self.episode_len = episode_len
         self.eval_num = 1
         self.train_buffer_len = train_buffer_len
+        self.normalize = normalize
+
+        # Replay Buffer
+        self.replay_buffer = ReplayBuffer(state_dim, action_dim, normalize=self.normalize)
 
         # Dynamics Model Trainings Parameters
         self.lr = lr
         self.batch_size = batch_size
         self.device = torch.device("cpu")  # torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using device: {self.device}")
-        self.model = DynamicsModel(self.state_dim, self.action_dim).to(self.device)
+        self.model = DynamicsModel(self.state_dim, self.action_dim, self.normalize).to(self.device)
         self.loss = nn.MSELoss()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         self.save_name = save_name
 
         # MPC Parameters
-        self.num_traj = 10  # 50
+        self.num_traj = 25  # 50
         self.gamma = 0.99
-        self.horizon = 5  # 15
+        self.horizon = 10  # 15
         self.reward = reward
         self.terminate = terminate
         self.policy = MPC(self.model, self.num_traj, self.gamma, self.horizon, self.reward, self.terminate)
-
-        # Replay Buffer
-        self.replay_buffer = ReplayBuffer(state_dim, action_dim)
 
     def train(self):
         """
@@ -80,9 +83,10 @@ class MBRLLearner:
             print("Episode {}".format(ep))
 
             if self.replay_buffer.__len__() > self.batch_size:
+                self.update_model_statistics()
                 self.update_dynamics()
-            o, _ = self.env.reset()
 
+            o, _ = self.env.reset()
             for t in range(self.episode_len):
                 # Only start MPC once a full episode has passed
                 if ep > self.train_buffer_len:
@@ -157,3 +161,8 @@ class MBRLLearner:
         print("Model Evaluation: ret = {}".format(ret))
         print("----------------------------------------")
 
+    def update_model_statistics(self):
+        self.model.update_state_var(self.replay_buffer.get_state_var())
+        self.model.update_state_mean(self.replay_buffer.get_state_mean())
+        self.model.update_action_var(self.replay_buffer.get_action_var())
+        self.model.update_action_mean(self.replay_buffer.get_action_mean())

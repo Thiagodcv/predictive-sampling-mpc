@@ -51,8 +51,7 @@ class MPC:
                 rets[seq] += (self.gamma ** t) * self.reward(state, action_seqs[seq, t, :])
                 if self.terminate is not None and self.terminate(state, action_seqs[seq, t, :], t):
                     break
-                input = np.concatenate((state, action_seqs[seq, t, :]))
-                next_state = self.model.forward_np(input) + state
+                next_state = self.model.forward_np(state, action_seqs[seq, t, :])
                 state = next_state
 
         # Return first action of optimal sequence
