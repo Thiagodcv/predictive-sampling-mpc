@@ -51,7 +51,7 @@ class TestMBRL(TestCase):
         num_episodes = 2000
         episode_len = 200
         batch_size = 256
-        train_buffer_len = 1000  # Right now have it set to only supervised learning
+        train_buffer_len = num_episodes  # Right now have it set to only supervised learning
 
         def reward(state, action):
             return 1
@@ -69,5 +69,5 @@ class TestMBRL(TestCase):
         learner = MBRLLearner(state_dim=state_dim, action_dim=action_dim, env=env,
                               num_episodes=num_episodes, episode_len=episode_len, reward=reward,
                               terminate=terminate, batch_size=batch_size, train_buffer_len=train_buffer_len,
-                              save_name="testv8", normalize=False)
+                              save_name="test_normalize", normalize=True)
         learner.train()
