@@ -29,9 +29,9 @@ def cartpole():
         else:
             return False
 
-    num_traj = 50
+    num_traj = 30
     gamma = 0.999
-    horizon = 20
+    horizon = 15
     mpc = MPC(model, num_traj, gamma, horizon, reward, terminate)
 
     MBRLLearner.static_eval_model(env, episode_len, mpc, gamma)

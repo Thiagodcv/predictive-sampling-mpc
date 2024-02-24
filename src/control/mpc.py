@@ -28,6 +28,7 @@ class MPC:
         self.horizon = horizon
         self.reward = reward
         self.terminate = terminate
+        self.past_actions = []
 
     def random_shooting(self, state0):
         """
@@ -41,7 +42,6 @@ class MPC:
         """
         # Sample actions
         action_seqs = np.random.binomial(n=1, p=0.5, size=(self.num_traj, self.horizon, 1))  # cartpole
-        # action_seqs = np.random.uniform(low=-3.0, high=3.0, size=(self.num_traj, self.horizon, 1))  # pendulum
 
         # Evaluate action sequences
         rets = np.zeros(self.num_traj)
@@ -56,4 +56,19 @@ class MPC:
 
         # Return first action of optimal sequence
         opt_seq_idx = np.argmax(rets)
-        return action_seqs[opt_seq_idx, 0, :]
+        opt_action = action_seqs[opt_seq_idx, 0, :]
+        self.append_past_action(opt_action)
+        return opt_action
+
+    def append_past_action(self, action):
+        """
+        Append an action to a list of past optimal actions taken by the MPC.
+        Parameters
+        ----------
+        action : np.array
+            An action taken by the MPC.
+        """
+        self.past_actions.append(action)
+
+    def empty_past_action_list(self):
+        self.past_actions = []

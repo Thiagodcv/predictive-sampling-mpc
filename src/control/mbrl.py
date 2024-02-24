@@ -87,13 +87,13 @@ class MBRLLearner:
                 self.update_dynamics()
 
             o, _ = self.env.reset()
+            self.policy.empty_past_action_list()
             for t in range(self.episode_len):
                 # Only start MPC once a full episode has passed
                 if ep > self.train_buffer_len:
                     action = self.policy.random_shooting(o)
                 else:
                     action = np.random.binomial(n=1, p=0.5, size=(1,))  # Cartpole
-                    #  action = np.random.uniform(low=-3.0, high=3.0, size=(1,))  # Inverted Pendulum
 
                 next_o, reward, terminated, truncated, _ = self.env.step(action)
                 if terminated or truncated:
@@ -127,6 +127,7 @@ class MBRLLearner:
     def eval_model(self):
 
         o, _ = self.env.reset()
+        self.policy.empty_past_action_list()
         ret = 0
         for t in range(self.episode_len):
             action = self.policy.random_shooting(o)
