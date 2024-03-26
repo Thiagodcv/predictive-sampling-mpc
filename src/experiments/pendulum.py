@@ -27,8 +27,8 @@ def pendulum():
         return - (angle_normalize(th) ** 2 + 0.1 * thdot ** 2 + 0.001 * (u ** 2))
 
     num_traj = 20
-    gamma = 0.9
-    horizon = 10
+    gamma = 0.95
+    horizon = 5
     mpc = MPC(model, num_traj, gamma, horizon, reward)
 
     MBRLLearner.static_eval_model(env, episode_len, mpc, gamma)

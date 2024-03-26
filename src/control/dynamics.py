@@ -26,12 +26,18 @@ class DynamicsModel(nn.Module):
         self.action_mean = nn.Parameter(torch.zeros(action_dim), requires_grad=False)
         self.normalize = normalize
 
+        # self.linear_relu_stack = nn.Sequential(
+        #     nn.Linear(state_dim + action_dim, 256),
+        #     nn.ReLU(),
+        #     nn.Linear(256, 256),
+        #     nn.ReLU(),
+        #     nn.Linear(256, state_dim)
+        # )
+
         self.linear_relu_stack = nn.Sequential(
-            nn.Linear(state_dim + action_dim, 256),
+            nn.Linear(state_dim + action_dim, 64),
             nn.ReLU(),
-            nn.Linear(256, 256),
-            nn.ReLU(),
-            nn.Linear(256, state_dim)
+            nn.Linear(64, state_dim)
         )
 
     def forward(self, x):
