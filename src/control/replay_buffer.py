@@ -58,16 +58,16 @@ class ReplayBuffer:
         and states have zero on the diagonal.
         """
         n_state = (state - self.state_mean) @ np.diagflat(np.reciprocal(np.sqrt(self.state_var)))
-        n_action = (action - self.action_mean) @ np.diagflat(np.reciprocal(np.sqrt(self.action_var)))
+        # n_action = (action - self.action_mean) @ np.diagflat(np.reciprocal(np.sqrt(self.action_var)))
         n_next_state = (next_state - self.state_mean) @ np.diagflat(np.reciprocal(np.sqrt(self.state_var)))
         d_n_state = n_next_state - n_state
 
         # Add zero-mean gaussian noise to tuple variables
         n_state += self.sample_state_gaussian(batch_size)
-        n_action += self.sample_action_gaussian(batch_size)
+        # n_action += self.sample_action_gaussian(batch_size)
         d_n_state += self.sample_state_gaussian(batch_size)
 
-        return n_state, n_action, d_n_state
+        return n_state, action, d_n_state
 
     def sample_state_gaussian(self, size):
         return np.random.multivariate_normal(mean=np.zeros(self.state_dim),

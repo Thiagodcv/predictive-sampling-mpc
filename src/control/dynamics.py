@@ -67,11 +67,11 @@ class DynamicsModel(nn.Module):
     def normalize_state_action(self, state, action):
         state_mean = self.state_mean.detach().numpy()
         state_var = self.state_var.detach().numpy()
-        action_mean = self.action_mean.detach().numpy()
-        action_var = self.action_var.detach().numpy()
+        # action_mean = self.action_mean.detach().numpy()
+        # action_var = self.action_var.detach().numpy()
         n_state = (state - state_mean) @ np.diagflat(np.reciprocal(np.sqrt(state_var)))
-        n_action = (action - action_mean) @ np.diagflat(np.reciprocal(np.sqrt(action_var)))
-        return n_state, n_action
+        # n_action = (action - action_mean) @ np.diagflat(np.reciprocal(np.sqrt(action_var)))
+        return n_state, action
 
     def denormalize_state(self, state):
         state_mean = self.state_mean.detach().numpy()
