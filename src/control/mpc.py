@@ -47,19 +47,37 @@ class MPC:
         # Evaluate action sequences
         rets = np.zeros(self.num_traj)
         for seq in range(self.num_traj):
-            state = np.copy(state0)
-            for t in range(self.horizon):
-                rets[seq] += (self.gamma ** t) * self.reward(state, action_seqs[seq, t, :])
-                if self.terminate is not None and self.terminate(state, action_seqs[seq, t, :], t):
-                    break
-                next_state = self.model.forward_np(state, action_seqs[seq, t, :])
-                state = next_state
+            rets[seq] = self.do_rollout(state0, action_seqs[seq, :, :])
 
         # Return first action of optimal sequence
         opt_seq_idx = np.argmax(rets)
         opt_action = action_seqs[opt_seq_idx, 0, :]
         self.append_past_action(opt_action)
         return opt_action
+
+    def do_rollout(self, state0, action_seq):
+        """
+        Parameters
+        ----------
+        state0: np.ndarray
+            First state
+        action_seq: np.ndarray
+            array of actions
+
+        Return
+        ------
+        float: the rollout return
+        """
+        state = np.copy(state0)
+        ret = 0
+        for t in range(self.horizon):
+            ret += (self.gamma ** t) * self.reward(state, action_seq[t, :])
+            if self.terminate is not None and self.terminate(state, action_seq[t, :], t):
+                break
+            next_state = self.model.forward_np(state, action_seq[t, :])
+            state = next_state
+
+        return ret
 
     def append_past_action(self, action):
         """
