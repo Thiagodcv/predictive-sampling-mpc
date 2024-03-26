@@ -1,4 +1,5 @@
 import numpy as np
+import multiprocessing
 
 
 class MPC:
@@ -44,10 +45,19 @@ class MPC:
         # action_seqs = np.random.binomial(n=1, p=0.5, size=(self.num_traj, self.horizon, 1))  # cartpole
         action_seqs = np.random.uniform(low=-10, high=10, size=(self.num_traj, self.horizon, 1))  # pendulum
 
+        # Multiprocessing
+        # TODO: Figure out if there's any way this can be fixed. If set num_workers=1 still slow?
+        pool = multiprocessing.Pool(8)
+
         # Evaluate action sequences
         rets = np.zeros(self.num_traj)
         for seq in range(self.num_traj):
-            rets[seq] = self.do_rollout(state0, action_seqs[seq, :, :])
+            # rets[seq] = self.do_rollout(state0, action_seqs[seq, :, :])
+            res = pool.apply_async(self.do_rollout, args=(state0, action_seqs[seq, :, :]))
+            rets[seq] = res.get()
+
+        pool.close()
+        pool.join()
 
         # Return first action of optimal sequence
         opt_seq_idx = np.argmax(rets)
