@@ -1,5 +1,5 @@
 import numpy as np
-import multiprocessing
+from multiprocessing.pool import ThreadPool
 
 
 class MPC:
@@ -7,7 +7,7 @@ class MPC:
     A class containing several different sampling-based MPC algorithms.
     """
 
-    def __init__(self, model, num_traj, gamma, horizon, reward, terminate=None):
+    def __init__(self, model, num_traj, gamma, horizon, reward, thread_pool, terminate=None):
         """
         Parameters
         ----------
@@ -30,6 +30,7 @@ class MPC:
         self.reward = reward
         self.terminate = terminate
         self.past_actions = []
+        self.pool = thread_pool
 
     def random_shooting(self, state0):
         """
@@ -45,19 +46,17 @@ class MPC:
         # action_seqs = np.random.binomial(n=1, p=0.5, size=(self.num_traj, self.horizon, 1))  # cartpole
         action_seqs = np.random.uniform(low=-10, high=10, size=(self.num_traj, self.horizon, 1))  # pendulum
 
-        # Multiprocessing
-        # TODO: Figure out if there's any way this can be fixed. If set num_workers=1 still slow?
-        pool = multiprocessing.Pool(8)
-
         # Evaluate action sequences
-        rets = np.zeros(self.num_traj)
-        for seq in range(self.num_traj):
-            # rets[seq] = self.do_rollout(state0, action_seqs[seq, :, :])
-            res = pool.apply_async(self.do_rollout, args=(state0, action_seqs[seq, :, :]))
-            rets[seq] = res.get()
+        if self.pool is None:
+            rets = np.zeros(self.num_traj)
+            for seq in range(self.num_traj):
+                rets[seq] = self.do_rollout(state0, action_seqs[seq, :, :])
 
-        pool.close()
-        pool.join()
+        else:
+            pool_args = [(state0, action_seqs[seq, :, :]) for seq in range(self.num_traj)]
+            result = self.pool.starmap_async(self.do_rollout, pool_args)
+            result.wait()
+            rets = result.get()
 
         # Return first action of optimal sequence
         opt_seq_idx = np.argmax(rets)
