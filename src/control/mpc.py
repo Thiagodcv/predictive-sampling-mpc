@@ -55,14 +55,14 @@ class MPC:
                 rets[seq] = self.do_rollout(state0, action_seqs[seq, :, :])
 
         else:
-            rets = []
-            for seq in range(self.num_traj):
-                rets.append(self.do_rollout.remote(self, state0, action_seqs[seq, :, :]))
-            rets = ray.get(rets)
-            # pool_args = [(state0, action_seqs[seq, :, :]) for seq in range(self.num_traj)]
-            # result = self.pool.starmap_async(self.do_rollout, pool_args)
-            # result.wait()
-            # rets = result.get()
+            # rets = []
+            # for seq in range(self.num_traj):
+            #     rets.append(self.do_rollout.remote(self, state0, action_seqs[seq, :, :]))
+            # rets = ray.get(rets)
+            pool_args = [(state0, action_seqs[seq, :, :]) for seq in range(self.num_traj)]
+            result = self.pool.starmap_async(self.do_rollout, pool_args)
+            result.wait()
+            rets = result.get()
 
         # Return first action of optimal sequence
         opt_seq_idx = np.argmax(rets)
@@ -70,7 +70,7 @@ class MPC:
         self.append_past_action(opt_action)
         return opt_action
 
-    @ray.remote
+    # @ray.remote
     def do_rollout(self, state0, action_seq):
         """
         Parameters
