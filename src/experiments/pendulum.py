@@ -8,6 +8,8 @@ from src.constants import MODELS_PATH
 import os
 from multiprocessing.pool import ThreadPool
 import math
+import multiprocessing
+import ray
 
 import time
 
@@ -35,8 +37,14 @@ def pendulum():
     num_traj = 2000
     gamma = 0.95
     horizon = 15
-    pool = ThreadPool(2)
-    mpc = MPC(model, num_traj, gamma, horizon, reward, thread_pool=pool)
+    # pool = ThreadPool(2)
+
+    # Ray stuff
+    num_workers = multiprocessing.cpu_count()
+    print("Number of workers: ", num_workers)
+    ray.init(num_cpus=num_workers)
+
+    mpc = MPC(model, num_traj, gamma, horizon, reward, thread_pool=True)
 
     start_time = time.time()
     MBRLLearner.static_eval_model(env, episode_len, mpc, gamma)
@@ -44,8 +52,8 @@ def pendulum():
     print("--- %s seconds ---" % (time.time() - start_time))
 
     # Close thread pool
-    pool.close()
-    pool.join()
+    # pool.close()
+    # pool.join()
 
 
 if __name__ == "__main__":
