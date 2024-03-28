@@ -34,26 +34,21 @@ def pendulum():
     model = DynamicsModel(state_dim, action_dim, normalize=True)
     model.load_state_dict(torch.load(os.path.join(MODELS_PATH, "pend_demo.pt")))
 
-    num_traj = 20
+    num_traj = 100
     gamma = 0.95
     horizon = 15
 
     # Ray stuff
     num_workers = multiprocessing.cpu_count()
     print("Number of workers: ", num_workers)
-    pool = ThreadPool(num_workers)
-    # ray.init(num_cpus=num_workers)
+    ray.init(num_cpus=num_workers)
 
-    mpc = MPC(model, num_traj, gamma, horizon, reward, thread_pool=pool)
+    mpc = MPC(model, num_traj, gamma, horizon, reward, multithreading=True)
 
     start_time = time.time()
     MBRLLearner.static_eval_model(env, episode_len, mpc, gamma)
 
     print("--- %s seconds ---" % (time.time() - start_time))
-
-    # Close thread pool
-    pool.close()
-    pool.join()
 
 
 if __name__ == "__main__":

@@ -84,3 +84,44 @@ class DynamicsModel(nn.Module):
         state_var = self.state_var.detach().numpy()
         output = state @ np.diagflat(np.sqrt(state_var)) + state_mean
         return output
+
+    def create_nn_params(self):
+        nn_params = {'state_mean': self.state_mean.detach().numpy(),
+                     'state_var': self.state_var.detach().numpy(),
+                     'action_mean': self.action_mean.detach().numpy(),
+                     'action_var': self.action_var.detach().numpy(),
+                     'stack': self.linear_relu_stack}
+        return nn_params
+
+
+def normalize_state_action_static(state_mean, state_var,
+                                  action_mean, action_var, state, action):
+    n_state = (state - state_mean) @ np.diagflat(np.reciprocal(np.sqrt(state_var)))
+    n_action = (action - action_mean) @ np.diagflat(np.reciprocal(np.sqrt(action_var)))
+    return n_state, n_action
+
+
+def denormalize_state_static(state_mean, state_var, state):
+    output = state @ np.diagflat(np.sqrt(state_var)) + state_mean
+    return output
+
+
+def forward_static(stack, x):
+    return stack(x)
+
+
+def forward_np_static(nn_params, state, action):
+    state_mean = nn_params['state_mean']
+    state_var = nn_params['state_var']
+    action_mean = nn_params['action_mean']
+    action_var = nn_params['action_var']
+    stack = nn_params['stack']
+
+    n_state, n_action = normalize_state_action_static(state_mean, state_var,
+                                                      action_mean, action_var,
+                                                      state, action)
+    x = np.concatenate((n_state, n_action))
+    x_torch = torch.from_numpy(x).float()
+    n_next_state = forward_static(stack, x_torch).detach().numpy() + n_state
+    output = denormalize_state_static(state_mean, state_var, n_next_state)
+    return output
