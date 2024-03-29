@@ -28,13 +28,13 @@ def reward(state, action):
 def pendulum():
     state_dim = 2
     action_dim = 1
-    episode_len = 200
+    episode_len = 5
     env = gym.make("Pendulum-v1", render_mode="human")
 
     model = DynamicsModel(state_dim, action_dim, normalize=True)
     model.load_state_dict(torch.load(os.path.join(MODELS_PATH, "pend_demo.pt")))
 
-    num_traj = 100
+    num_traj = 4000
     gamma = 0.95
     horizon = 15
 

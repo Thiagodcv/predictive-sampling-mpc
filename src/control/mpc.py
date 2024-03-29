@@ -1,6 +1,4 @@
 import numpy as np
-from multiprocessing.pool import ThreadPool
-import multiprocessing
 import ray
 from src.control.dynamics import forward_np_static
 
@@ -60,16 +58,21 @@ class MPC:
             nn_params_ref = ray.put(self.model.create_nn_params())
             mpc_params_ref = ray.put({'gamma': self.gamma, 'horizon': self.horizon})
             action_seqs_ref = ray.put(action_seqs)
+            reward_ref = ray.put(self.reward)
+            terminate_ref = ray.put(self.terminate)
 
             rets_ref = []
             for seq in range(self.num_traj):
-                rets_ref.append(do_rollout_static.remote(nn_params_ref, mpc_params_ref, state0, action_seqs_ref, seq))
+                rets_ref.append(do_rollout_static.remote(nn_params_ref, mpc_params_ref, reward_ref, terminate_ref,
+                                                         state0, action_seqs_ref, seq))
             rets = ray.get(rets_ref)
 
             del rets_ref
             del nn_params_ref
             del mpc_params_ref
             del action_seqs_ref
+            del reward_ref
+            del terminate_ref
 
         # Return first action of optimal sequence
         opt_seq_idx = np.argmax(rets)
@@ -115,24 +118,15 @@ class MPC:
         self.past_actions = []
 
 
-def angle_normalize(x):
-    return ((x + np.pi) % (2 * np.pi)) - np.pi
-
-
-def reward(state, action):
-    th = state[0]
-    thdot = state[1]
-    u = action
-    return - (angle_normalize(th) ** 2 + 0.1 * thdot ** 2 + 0.001 * (u ** 2))
-
-
 @ray.remote
-def do_rollout_static(nn_params, mpc_params, state0, action_seq, seq_num):
+def do_rollout_static(nn_params, mpc_params, reward, terminate, state0, action_seq, seq_num):
     """
     Parameters
     ----------
     nn_params : dict
     mpc_params : dict
+    reward : function
+    terminate : function
     state0 : np.ndarray
     action_seq : np.ndarray
     seq_num : int
@@ -144,8 +138,8 @@ def do_rollout_static(nn_params, mpc_params, state0, action_seq, seq_num):
     ret = 0
     for t in range(horizon):
         ret += (gamma ** t) * reward(state, action_seq[seq_num, t, :])
-        # if self.terminate is not None and self.terminate(state, action_seq[t, :], t):
-        #     break
+        if terminate is not None and terminate(state, action_seq[t, :], t):
+            break
         next_state = forward_np_static(nn_params, state, action_seq[seq_num, t, :])
         state = next_state
     return ret
