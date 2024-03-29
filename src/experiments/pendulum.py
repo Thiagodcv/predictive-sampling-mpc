@@ -12,6 +12,7 @@ import multiprocessing
 import ray
 
 import time
+import cProfile
 
 
 def angle_normalize(x):
@@ -28,22 +29,22 @@ def reward(state, action):
 def pendulum():
     state_dim = 2
     action_dim = 1
-    episode_len = 5
+    episode_len = 200
     env = gym.make("Pendulum-v1", render_mode="human")
 
     model = DynamicsModel(state_dim, action_dim, normalize=True)
     model.load_state_dict(torch.load(os.path.join(MODELS_PATH, "pend_demo.pt")))
 
-    num_traj = 4000
+    num_traj = 200
     gamma = 0.95
     horizon = 15
 
     # Ray stuff
-    num_workers = multiprocessing.cpu_count()
-    print("Number of workers: ", num_workers)
-    ray.init(num_cpus=num_workers)
+    # num_workers = multiprocessing.cpu_count()
+    # print("Number of workers: ", num_workers)
+    # ray.init(num_cpus=num_workers)
 
-    mpc = MPC(model, num_traj, gamma, horizon, reward, multithreading=True)
+    mpc = MPC(model, num_traj, gamma, horizon, reward, multithreading=False)
 
     start_time = time.time()
     MBRLLearner.static_eval_model(env, episode_len, mpc, gamma)
@@ -52,5 +53,6 @@ def pendulum():
 
 
 if __name__ == "__main__":
+    # cProfile.run('pendulum()')
     pendulum()
     
