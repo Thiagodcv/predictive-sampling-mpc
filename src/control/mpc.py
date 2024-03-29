@@ -33,7 +33,7 @@ class MPC:
         self.terminate = terminate
         self.past_actions = []
         self.multithreading = multithreading
-        self.past_action = None
+        self.past_trajectory = None
 
     def random_shooting(self, state0):
         """
@@ -46,11 +46,12 @@ class MPC:
         np.array: The first action in the optimal sequence of actions.
         """
         # Sample actions
-        if self.past_action is None:
-            self.past_action = np.zeros(shape=(self.num_traj, self.horizon, 1))
-            return self.past_action[0, 0, :]
+        if self.past_trajectory is None:
+            self.past_trajectory = np.zeros(shape=(self.num_traj, self.horizon, 1))
+            return self.past_trajectory[0, 0, :]
         else:
-            action_seqs = self.past_action + np.random.normal(loc=0, scale=1.0, size=(self.num_traj, self.horizon, 1))
+            action_seqs = self.past_trajectory + np.random.normal(loc=0, scale=1.0,
+                                                                  size=(self.num_traj, self.horizon, 1))
 
         # Evaluate action sequences
         if not self.multithreading:
@@ -80,7 +81,7 @@ class MPC:
 
         # Return first action of optimal sequence
         opt_seq_idx = np.argmax(rets)
-        self.past_action = action_seqs[opt_seq_idx, :, :]
+        self.past_trajectory = action_seqs[opt_seq_idx, :, :]
         opt_action = action_seqs[opt_seq_idx, 0, :]
         return opt_action
 
@@ -108,8 +109,8 @@ class MPC:
 
         return ret
 
-    def empty_past_action(self):
-        self.past_action = None
+    def empty_past_trajectory(self):
+        self.past_trajectory = None
 
 
 @ray.remote
