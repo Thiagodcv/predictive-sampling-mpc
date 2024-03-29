@@ -87,7 +87,7 @@ class MBRLLearner:
                 self.update_dynamics()
 
             o, _ = self.env.reset()
-            self.policy.empty_past_action_list()
+            self.policy.empty_past_action()
             for t in range(self.episode_len):
                 # Only start MPC once a full episode has passed
                 if ep > self.train_buffer_len:
@@ -128,7 +128,7 @@ class MBRLLearner:
     def eval_model(self):
 
         o, _ = self.env.reset()
-        self.policy.empty_past_action_list()
+        self.policy.empty_past_action()
         ret = 0
         for t in range(self.episode_len):
             action = self.policy.random_shooting(o)

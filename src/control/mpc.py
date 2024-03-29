@@ -5,7 +5,7 @@ from src.control.dynamics import forward_np_static
 
 class MPC:
     """
-    A class containing several different sampling-based MPC algorithms.
+    A class implementation of a predictive sampling MPC.
     """
 
     def __init__(self, model, num_traj, gamma, horizon, reward, multithreading, terminate=None):
@@ -33,6 +33,7 @@ class MPC:
         self.terminate = terminate
         self.past_actions = []
         self.multithreading = multithreading
+        self.past_action = None
 
     def random_shooting(self, state0):
         """
@@ -45,8 +46,11 @@ class MPC:
         np.array: The first action in the optimal sequence of actions.
         """
         # Sample actions
-        # action_seqs = np.random.binomial(n=1, p=0.5, size=(self.num_traj, self.horizon, 1))  # cartpole
-        action_seqs = np.random.uniform(low=-10, high=10, size=(self.num_traj, self.horizon, 1))  # pendulum
+        if self.past_action is None:
+            self.past_action = np.zeros(shape=(self.num_traj, self.horizon, 1))
+            return self.past_action[0, 0, :]
+        else:
+            action_seqs = self.past_action + np.random.normal(loc=0, scale=1.0, size=(self.num_traj, self.horizon, 1))
 
         # Evaluate action sequences
         if not self.multithreading:
@@ -76,8 +80,8 @@ class MPC:
 
         # Return first action of optimal sequence
         opt_seq_idx = np.argmax(rets)
+        self.past_action = action_seqs[opt_seq_idx, :, :]
         opt_action = action_seqs[opt_seq_idx, 0, :]
-        self.append_past_action(opt_action)
         return opt_action
 
     def do_rollout(self, state0, action_seq):
@@ -104,18 +108,8 @@ class MPC:
 
         return ret
 
-    def append_past_action(self, action):
-        """
-        Append an action to a list of past optimal actions taken by the MPC.
-        Parameters
-        ----------
-        action : np.array
-            An action taken by the MPC.
-        """
-        self.past_actions.append(action)
-
-    def empty_past_action_list(self):
-        self.past_actions = []
+    def empty_past_action(self):
+        self.past_action = None
 
 
 @ray.remote
