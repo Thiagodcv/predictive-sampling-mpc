@@ -6,6 +6,7 @@ import gymnasium as gym
 import numpy as np
 import torch
 import os
+import time
 
 
 class TestMPC(TestCase):
@@ -116,3 +117,28 @@ class TestMPC(TestCase):
         state_dummy = np.zeros(state_dim)
         for i in range(100):
             print("action: ", mpc.random_shooting(state_dummy))
+
+    def test_random_sampling_time(self):
+        start_time = time.time()
+        for i in range(200):
+            # action_seqs = np.random.uniform(low=-10, high=10, size=(7000, 15, 1))
+            action_seqs = np.random.standard_normal(size=(2000, 15, 6))
+        print("--- %s seconds ---" % (time.time() - start_time))
+
+    def test_call_times(self):
+        start_time = time.time()
+
+        a = torch.zeros(size=(3, 1))
+        b = np.ones(3)
+        mat1 = np.identity(3)
+        mat2 = np.identity(3)
+        for i in range(200):
+            for seq in range(200):
+                for t in range(15):
+                    np.matmul(mat1, mat2)
+                    # np.reciprocal(b)
+                    # mat1 @ mat2
+                    # np.sqrt(b)
+                    # a.detach().numpy()
+
+        print("--- %s seconds ---" % (time.time() - start_time))
