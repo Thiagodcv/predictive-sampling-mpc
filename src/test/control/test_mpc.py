@@ -135,7 +135,8 @@ class TestMPC(TestCase):
         for i in range(200):
             for seq in range(200):
                 for t in range(15):
-                    np.matmul(mat1, mat2)
+                    torch.from_numpy(b).float()
+                    # np.matmul(mat1, mat2)
                     # np.reciprocal(b)
                     # mat1 @ mat2
                     # np.sqrt(b)
@@ -194,3 +195,19 @@ class TestMPC(TestCase):
 
         denorm_state_1 = state @ np.diagflat(np.sqrt(state_var)) + state_mean
         self.assertTrue(np.linalg.norm(denorm_state - denorm_state_1) < 1e-5)
+
+    def test_model_forward(self):
+        state_dim = 2
+        action_dim = 1
+        model = DynamicsModel(state_dim, action_dim, normalize=True)
+        model.load_state_dict(torch.load(os.path.join(MODELS_PATH, "pend_demo_256.pt")))
+        x = torch.ones(3).float()
+
+        start_time = time.time()
+        for i in range(200):
+            for seq in range(200):
+                for t in range(15):
+                    with torch.no_grad():
+                        model.linear_relu_stack(x)
+
+        print("--- %s seconds ---" % (time.time() - start_time))
