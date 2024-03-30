@@ -96,8 +96,16 @@ class DynamicsModel(nn.Module):
 
 def normalize_state_action_static(state_mean, state_var,
                                   action_mean, action_var, state, action):
-    n_state = (state - state_mean) @ np.diagflat(np.reciprocal(np.sqrt(state_var)))
-    n_action = (action - action_mean) @ np.diagflat(np.reciprocal(np.sqrt(action_var)))
+    sqrt_state_var = np.sqrt(state_var)
+    n_state = state - state_mean
+    for j in range(n_state.shape[0]):
+        n_state[j] = n_state[j] / sqrt_state_var[j]
+
+    sqrt_action_var = np.sqrt(action_var)
+    n_action = action - action_mean
+    for j in range(n_action.shape[0]):
+        n_action[j] = n_action[j] / sqrt_action_var[j]
+
     return n_state, n_action
 
 

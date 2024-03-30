@@ -142,3 +142,28 @@ class TestMPC(TestCase):
                     # a.detach().numpy()
 
         print("--- %s seconds ---" % (time.time() - start_time))
+
+    def test_norm_time(self):
+        action = np.ones(3)
+        action_mean = 0.5 * np.ones(3)
+        action_var = 0.2 * np.ones(3)
+
+        start_time = time.time()
+        for i in range(200):
+            for seq in range(200):
+                for t in range(15):
+                    # (action - action_mean) @ np.diagflat(np.reciprocal(np.sqrt(action_var)))
+                    sqrt_var = np.sqrt(action_var)
+                    norm_action = action - action_mean
+                    for j in range(norm_action.shape[0]):
+                        norm_action[j] = norm_action[j] / sqrt_var[j]
+
+        print("--- %s seconds ---" % (time.time() - start_time))
+
+        sqrt_var = np.sqrt(action_var)
+        norm_action = action - action_mean
+        for j in range(norm_action.shape[0]):
+            norm_action[j] = norm_action[j] / sqrt_var[j]
+
+        norm_action_1 = (action - action_mean) @ np.diagflat(np.reciprocal(np.sqrt(action_var)))
+        self.assertTrue(np.linalg.norm(norm_action - norm_action_1) < 1e-5)
