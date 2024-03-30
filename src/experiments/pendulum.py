@@ -33,7 +33,7 @@ def pendulum():
     env = gym.make("Pendulum-v1", render_mode="human")
 
     model = DynamicsModel(state_dim, action_dim, normalize=True)
-    model.load_state_dict(torch.load(os.path.join(MODELS_PATH, "pend_demo.pt")))
+    model.load_state_dict(torch.load(os.path.join(MODELS_PATH, "pend_demo_256.pt")))
 
     num_traj = 200
     gamma = 0.95
