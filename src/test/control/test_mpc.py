@@ -167,3 +167,30 @@ class TestMPC(TestCase):
 
         norm_action_1 = (action - action_mean) @ np.diagflat(np.reciprocal(np.sqrt(action_var)))
         self.assertTrue(np.linalg.norm(norm_action - norm_action_1) < 1e-5)
+
+    def test_denorm_time(self):
+        state = np.ones(3)
+        state_mean = 0.5 * np.ones(3)
+        state_var = 0.2 * np.ones(3)
+
+        start_time = time.time()
+        for i in range(200):
+            for seq in range(200):
+                for t in range(15):
+                    denorm_state = state
+                    sqrt_state = np.sqrt(state_var)
+                    for j in range(state.shape[0]):
+                        denorm_state[j] = denorm_state[j] * sqrt_state[j]
+                    denorm_state = denorm_state + state_mean
+                    # state @ np.diagflat(np.sqrt(state_var)) + state_mean
+
+        print("--- %s seconds ---" % (time.time() - start_time))
+
+        denorm_state = state
+        sqrt_state = np.sqrt(state_var)
+        for j in range(state.shape[0]):
+            denorm_state[j] = denorm_state[j] * sqrt_state[j]
+        denorm_state = denorm_state + state_mean
+
+        denorm_state_1 = state @ np.diagflat(np.sqrt(state_var)) + state_mean
+        self.assertTrue(np.linalg.norm(denorm_state - denorm_state_1) < 1e-5)

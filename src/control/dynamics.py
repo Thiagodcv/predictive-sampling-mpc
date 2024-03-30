@@ -110,7 +110,12 @@ def normalize_state_action_static(state_mean, state_var,
 
 
 def denormalize_state_static(state_mean, state_var, state):
-    output = state @ np.diagflat(np.sqrt(state_var)) + state_mean
+    output = state
+    sqrt_state = np.sqrt(state_var)
+    for j in range(state.shape[0]):
+        output[j] = output[j] * sqrt_state[j]
+    output = output + state_mean
+
     return output
 
 
