@@ -35,7 +35,7 @@ def pendulum():
     model = DynamicsModel(state_dim, action_dim, normalize=True)
     model.load_state_dict(torch.load(os.path.join(MODELS_PATH, "pend_demo_256.pt")))
 
-    num_traj = 1000
+    num_traj = 1024  # Make sure it's divisible by num_workers
     gamma = 0.95
     horizon = 15
 
