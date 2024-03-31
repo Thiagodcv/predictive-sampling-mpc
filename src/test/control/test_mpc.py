@@ -197,17 +197,47 @@ class TestMPC(TestCase):
         self.assertTrue(np.linalg.norm(denorm_state - denorm_state_1) < 1e-5)
 
     def test_model_forward(self):
+        import scipy.linalg.blas as blas
+
         state_dim = 2
         action_dim = 1
         model = DynamicsModel(state_dim, action_dim, normalize=True)
         model.load_state_dict(torch.load(os.path.join(MODELS_PATH, "pend_demo_256.pt")))
-        x = torch.ones(3).float()
+        # x = torch.ones(3).float()
 
         start_time = time.time()
+        x = np.ones(3)
+
+        w1 = model.linear_relu_stack[0].weight.detach().numpy()
+        b1 = model.linear_relu_stack[0].bias.detach().numpy()
+
+        w2 = model.linear_relu_stack[2].weight.detach().numpy()
+        b2 = model.linear_relu_stack[2].bias.detach().numpy()
+
+        w3 = model.linear_relu_stack[4].weight.detach().numpy()
+        b3 = model.linear_relu_stack[4].bias.detach().numpy()
+
+        w1 = np.array(w1, order='F')
+        w2 = np.array(w2, order='F')
+        w3 = np.array(w3, order='F')
+
         for i in range(200):
             for seq in range(200):
                 for t in range(15):
-                    with torch.no_grad():
-                        model.linear_relu_stack(x)
+                    y = blas.sgemv(alpha=1., a=w1, x=x) + b1
+                    y = y * (y > 0)
+                    y = blas.sgemv(alpha=1., a=w2, x=y) + b2
+                    y = y * (y > 0)
+                    y = blas.sgemv(alpha=1., a=w3, x=y) + b3
+
+                    # y = w1 @ x + b1
+                    # y = y * (y > 0)
+                    # y = w2 @ y + b2
+                    # y = y * (y > 0)
+                    # y = w3 @ y + b3
+
+                    # with torch.no_grad():
+                    #     model.linear_relu_stack(x)
 
         print("--- %s seconds ---" % (time.time() - start_time))
+
