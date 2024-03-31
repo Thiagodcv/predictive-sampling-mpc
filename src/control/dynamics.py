@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.linalg.blas as blas
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -26,19 +27,19 @@ class DynamicsModel(nn.Module):
         self.action_mean = nn.Parameter(torch.zeros(action_dim), requires_grad=False)
         self.normalize = normalize
 
-        # self.linear_relu_stack = nn.Sequential(
-        #     nn.Linear(state_dim + action_dim, 256),
-        #     nn.ReLU(),
-        #     nn.Linear(256, 256),
-        #     nn.ReLU(),
-        #     nn.Linear(256, state_dim)
-        # )
-
         self.linear_relu_stack = nn.Sequential(
-            nn.Linear(state_dim + action_dim, 64),
+            nn.Linear(state_dim + action_dim, 256),
             nn.ReLU(),
-            nn.Linear(64, state_dim)
+            nn.Linear(256, 256),
+            nn.ReLU(),
+            nn.Linear(256, state_dim)
         )
+
+        # self.linear_relu_stack = nn.Sequential(
+        #     nn.Linear(state_dim + action_dim, 64),
+        #     nn.ReLU(),
+        #     nn.Linear(64, state_dim)
+        # )
 
     def forward(self, x):
         output = self.linear_relu_stack(x)
@@ -86,11 +87,33 @@ class DynamicsModel(nn.Module):
         return output
 
     def create_nn_params(self):
+        # Take layers from nn.sequential
+        w1 = self.linear_relu_stack[0].weight.detach().numpy()
+        b1 = self.linear_relu_stack[0].bias.detach().numpy()
+
+        w2 = self.linear_relu_stack[2].weight.detach().numpy()
+        b2 = self.linear_relu_stack[2].bias.detach().numpy()
+
+        w3 = self.linear_relu_stack[4].weight.detach().numpy()
+        b3 = self.linear_relu_stack[4].bias.detach().numpy()
+
+        # Make matrices FORTRAN-contiguous
+        w1 = np.array(w1, order='F')
+        w2 = np.array(w2, order='F')
+        w3 = np.array(w3, order='F')
+
+        stack = {'w1': w1,
+                 'w2': w2,
+                 'w3': w3,
+                 'b1': b1,
+                 'b2': b2,
+                 'b3': b3}
+
         nn_params = {'state_mean': self.state_mean.detach().numpy(),
                      'state_var': self.state_var.detach().numpy(),
                      'action_mean': self.action_mean.detach().numpy(),
                      'action_var': self.action_var.detach().numpy(),
-                     'stack': self.linear_relu_stack}
+                     'stack': stack}
         return nn_params
 
 
@@ -120,7 +143,20 @@ def denormalize_state_static(state_mean, state_var, state):
 
 
 def forward_static(stack, x):
-    return stack(x)
+    w1 = stack['w1']
+    w2 = stack['w2']
+    w3 = stack['w3']
+    b1 = stack['b1']
+    b2 = stack['b2']
+    b3 = stack['b3']
+
+    y = blas.sgemv(alpha=1., a=w1, x=x) + b1
+    y = y * (y > 0)
+    y = blas.sgemv(alpha=1., a=w2, x=y) + b2
+    y = y * (y > 0)
+    y = blas.sgemv(alpha=1., a=w3, x=y) + b3
+
+    return y
 
 
 def forward_np_static(nn_params, state, action):
@@ -134,7 +170,6 @@ def forward_np_static(nn_params, state, action):
                                                       action_mean, action_var,
                                                       state, action)
     x = np.concatenate((n_state, n_action))
-    x_torch = torch.from_numpy(x).float()
-    n_next_state = forward_static(stack, x_torch).detach().numpy() + n_state
+    n_next_state = forward_static(stack, x) + n_state
     output = denormalize_state_static(state_mean, state_var, n_next_state)
     return output
