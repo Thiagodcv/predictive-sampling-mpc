@@ -1,6 +1,7 @@
 import numpy as np
 import ray
 from src.control.dynamics import forward_np_static
+import itertools
 
 
 class MPC:
@@ -67,10 +68,14 @@ class MPC:
             terminate_ref = ray.put(self.terminate)
 
             rets_ref = []
-            for seq in range(self.num_traj):
-                rets_ref.append(do_rollout_static.remote(nn_params_ref, mpc_params_ref, reward_ref, terminate_ref,
-                                                         state0, action_seqs_ref, seq))
-            rets = ray.get(rets_ref)
+            seqs = list(range(self.num_traj))
+            batch_size = int(self.num_traj / 16)
+            for i in range(0, self.num_traj, batch_size):
+                batch = seqs[i:i+batch_size]
+                rets_ref.append(do_batch_rollout_static.remote(nn_params_ref, mpc_params_ref, reward_ref,
+                                                               terminate_ref, state0, action_seqs_ref, batch))
+            # rets = ray.get(rets_ref)
+            rets = list(itertools.chain(*ray.get(rets_ref)))
 
             del rets_ref
             del nn_params_ref
@@ -113,7 +118,6 @@ class MPC:
         self.past_trajectory = None
 
 
-@ray.remote
 def do_rollout_static(nn_params, mpc_params, reward, terminate, state0, action_seq, seq_num):
     """
     Parameters
@@ -138,3 +142,20 @@ def do_rollout_static(nn_params, mpc_params, reward, terminate, state0, action_s
         next_state = forward_np_static(nn_params, state, action_seq[seq_num, t, :])
         state = next_state
     return ret
+
+
+@ray.remote
+def do_batch_rollout_static(nn_params, mpc_params, reward, terminate, state0, action_seq, batch_seq_num):
+    """
+    Parameters
+    ----------
+    nn_params : dict
+    mpc_params : dict
+    reward : function
+    terminate : function
+    state0 : np.ndarray
+    action_seq : np.ndarray
+    batch_seq_num : list of int
+    """
+    return [do_rollout_static(nn_params, mpc_params, reward, terminate, state0, action_seq, idx)
+            for idx in batch_seq_num]
