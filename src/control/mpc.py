@@ -66,6 +66,7 @@ class MPC:
             action_seqs_ref = ray.put(action_seqs)
             reward_ref = ray.put(self.reward)
             terminate_ref = ray.put(self.terminate)
+            state0_ref = ray.put(state0)
 
             rets_ref = []
             seqs = list(range(self.num_traj))
@@ -73,7 +74,7 @@ class MPC:
             for i in range(0, self.num_traj, batch_size):
                 batch = seqs[i:i+batch_size]
                 rets_ref.append(do_batch_rollout_static.remote(nn_params_ref, mpc_params_ref, reward_ref,
-                                                               terminate_ref, state0, action_seqs_ref, batch))
+                                                               terminate_ref, state0_ref, action_seqs_ref, batch))
             # rets = ray.get(rets_ref)
             rets = list(itertools.chain(*ray.get(rets_ref)))
 
