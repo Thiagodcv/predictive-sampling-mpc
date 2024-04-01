@@ -84,6 +84,7 @@ class MPC:
             del action_seqs_ref
             del reward_ref
             del terminate_ref
+            del state0_ref
 
         # Return first action of optimal sequence
         opt_seq_idx = np.argmax(rets)
