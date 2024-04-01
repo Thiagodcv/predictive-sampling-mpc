@@ -7,6 +7,7 @@ from src.control.replay_buffer import ReplayBuffer
 import os
 from datetime import datetime
 from src.constants import MODELS_PATH
+import ray
 
 
 class MBRLLearner:
@@ -50,7 +51,7 @@ class MBRLLearner:
         self.env = env
         self.num_episodes = num_episodes
         self.episode_len = episode_len
-        self.eval_num = 1
+        self.eval_num = 5
         self.train_buffer_len = train_buffer_len
         self.normalize = normalize
 
@@ -68,12 +69,12 @@ class MBRLLearner:
         self.save_name = save_name
 
         # MPC Parameters
-        self.num_traj = 25  # 50
+        self.num_traj = 1000  # 50
         self.gamma = 0.99
         self.horizon = 10  # 15
         self.reward = reward
         self.terminate = terminate
-        self.policy = MPC(self.model, self.num_traj, self.gamma, self.horizon, self.reward, self.terminate)
+        self.policy = MPC(self.model, self.num_traj, self.gamma, self.horizon, self.reward, True, self.terminate)
 
     def train(self):
         """
