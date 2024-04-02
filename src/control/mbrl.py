@@ -50,7 +50,7 @@ class MBRLLearner:
         self.env = env
         self.num_episodes = num_episodes
         self.episode_len = episode_len
-        self.eval_num = 5
+        self.print_results_buff = 5
         self.num_rand_eps = num_rand_eps
         self.normalize = normalize
         self.override_env_reward = True
@@ -82,6 +82,8 @@ class MBRLLearner:
         """
         Train the MBRL agent.
         """
+        ret_list = []
+        trunc_list = []
         for ep in range(self.num_episodes):
             if self.replay_buffer.__len__() > self.batch_size:
                 self.update_model_statistics()
@@ -119,9 +121,19 @@ class MBRLLearner:
                 o = next_o
             self.env.close()
 
-            print("Episode {} finished after {} time steps with return {}".format(ep, ep_len, ep_ret))
-            # if ep % self.eval_num == 0 and ep >= self.num_rand_eps:  # Keep latter condition in for a bit
-            #     self.eval_model()
+            # Results from training
+            ret_list.append(ep_ret)
+            trunc_list.append(ep_len)
+
+            if ep % self.print_results_buff == 0 and ep != 0:
+                print("Episodes {}-{} finished | mean return: {} | return variance: {} | mean time of termination: {}"
+                      .format(ep - self.print_results_buff,
+                              ep,
+                              np.mean(ret_list),
+                              np.var(ret_list),
+                              np.mean(trunc_list)))
+                ret_list.clear()
+                trunc_list.clear()
 
         # Save trained dynamics model
         if self.save_name is None:
@@ -148,7 +160,6 @@ class MBRLLearner:
             self.optimizer.step()
 
     def eval_model(self):
-
         o, _ = self.env.reset()
         self.policy.empty_past_trajectory()
         ret = 0
