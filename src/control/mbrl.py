@@ -89,7 +89,7 @@ class MBRLLearner:
 
             o, _ = self.env.reset()
             ep_ret = 0
-            ep_len = 0
+            ep_len = self.episode_len  # If episode doesn't terminate from gym, it's len will be episode_len
             self.policy.empty_past_trajectory()
             for t in range(self.episode_len):
 
@@ -155,7 +155,17 @@ class MBRLLearner:
         for t in range(self.episode_len):
             action = self.policy.random_shooting(o)
             next_o, reward, terminated, truncated, _ = self.env.step(action)
-            ret += self.gamma**t * reward
+
+            # Use custom reward function
+            if self.override_env_reward:
+                reward = self.reward(o, action)
+            ret += (self.gamma ** t) * reward
+
+            # Use custom termination condition
+            if self.override_env_terminate:
+                terminated = self.terminate(o, action, t)
+                truncated = False
+
             if terminated or truncated:
                 break
             o = next_o
@@ -166,7 +176,7 @@ class MBRLLearner:
         print("----------------------------------------")
 
     @staticmethod
-    def static_eval_model(env, episode_len, policy, gamma):
+    def static_eval_model(env, episode_len, policy, gamma, reward_func=None, terminate_func=None):
         """
         A static version of eval_model.
         """
@@ -175,7 +185,17 @@ class MBRLLearner:
         for t in range(episode_len):
             action = policy.random_shooting(o)
             next_o, reward, terminated, truncated, _ = env.step(action)
-            ret += gamma**t * reward
+
+            # Use custom reward function
+            if reward_func is not None:
+                reward = reward_func(o, action)
+            ret += gamma ** t * reward
+
+            # Use custom termination condition
+            if terminate_func is not None:
+                terminated = terminate_func(o, action, t)
+                truncated = False
+
             if terminated or truncated:
                 break
             o = next_o

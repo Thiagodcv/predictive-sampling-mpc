@@ -46,7 +46,7 @@ def ant():
     mpc = MPC(model, num_traj, gamma, horizon, reward, True, terminate)
 
     start_time = time.time()
-    MBRLLearner.static_eval_model(env, episode_len, mpc, gamma)
+    MBRLLearner.static_eval_model(env, episode_len, mpc, gamma, reward_func=reward, terminate_func=terminate)
 
     print("--- %s seconds ---" % (time.time() - start_time))
 
