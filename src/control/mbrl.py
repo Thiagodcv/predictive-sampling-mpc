@@ -94,8 +94,8 @@ class MBRLLearner:
                 if ep >= self.num_rand_eps:
                     action = self.policy.random_shooting(o)
                 else:
-                    # action = np.random.binomial(n=1, p=0.5, size=(1,))  # Cartpole
-                    action = np.random.uniform(low=-10, high=10, size=(1,))  # pendulum
+                    # action = np.random.uniform(low=-10, high=10, size=(1,))  # pendulum
+                    action = np.random.uniform(low=-1, high=1, size=(8,))
 
                 next_o, reward, terminated, truncated, _ = self.env.step(action)
                 if terminated or truncated:
@@ -160,8 +160,8 @@ class MBRLLearner:
             action = policy.random_shooting(o)
             next_o, reward, terminated, truncated, _ = env.step(action)
             ret += gamma**t * reward
-            if terminated or truncated:
-                break
+            # if terminated or truncated:
+            #     break
             o = next_o
         env.close()
 

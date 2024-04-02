@@ -6,22 +6,20 @@ import ray
 
 
 def run_mbrl():
-    state_dim = 2
-    action_dim = 1
-    env = gym.make("Pendulum-v1")
-    num_episodes = 2020
+    state_dim = 27
+    action_dim = 8
+    env = gym.make("Ant-v4")
+    num_episodes = 4000
     episode_len = 200
     batch_size = 256
-    num_rand_eps = 2000  # Right now have it set to only supervised learning
-
-    def angle_normalize(x):
-        return ((x + np.pi) % (2 * np.pi)) - np.pi
+    num_rand_eps = num_episodes
 
     def reward(state, action):
-        th = state[0]
-        thdot = state[1]
-        u = action
-        return - (angle_normalize(th) ** 2 + 0.1 * thdot ** 2 + 0.001 * (u ** 2))
+        x_vel = state[13]
+        return x_vel + 0.5 - 0.005 * np.linalg.norm(action/150)**2
+
+    def terminate(state, action, t):
+        return state[0] < 0.2 or state[0] > 1.0
 
     # Ray stuff
     num_workers = multiprocessing.cpu_count()
@@ -30,8 +28,8 @@ def run_mbrl():
 
     learner = MBRLLearner(state_dim=state_dim, action_dim=action_dim, env=env,
                           num_episodes=num_episodes, episode_len=episode_len, reward=reward,
-                          terminate=None, batch_size=batch_size, num_rand_eps=num_rand_eps,
-                          save_name="demo-4-1-2024", normalize=True)
+                          terminate=terminate, batch_size=batch_size, num_rand_eps=num_rand_eps,
+                          save_name="ant-4-2", normalize=True)
     learner.train()
 
 

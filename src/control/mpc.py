@@ -48,11 +48,12 @@ class MPC:
         """
         # Sample actions
         if self.past_trajectory is None:
-            self.past_trajectory = np.zeros(shape=(self.num_traj, self.horizon, 1))
+            self.past_trajectory = np.zeros(shape=(self.num_traj, self.horizon, 8))
             return self.past_trajectory[0, 0, :]
         else:
             action_seqs = self.past_trajectory + np.random.normal(loc=0, scale=1.0,
-                                                                  size=(self.num_traj, self.horizon, 1))
+                                                                  size=(self.num_traj, self.horizon, 8))
+            action_seqs = np.clip(action_seqs, -1.0, 1.0)
 
         # Evaluate action sequences
         if not self.multithreading:
