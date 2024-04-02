@@ -69,7 +69,7 @@ class TestMBRL(TestCase):
 
         learner = MBRLLearner(state_dim=state_dim, action_dim=action_dim, env=env,
                               num_episodes=num_episodes, episode_len=episode_len, reward=reward,
-                              terminate=terminate, batch_size=batch_size, train_buffer_len=train_buffer_len,
+                              terminate=terminate, batch_size=batch_size, num_rand_eps=train_buffer_len,
                               save_name="test_normalize", normalize=True)
         learner.train()
 
@@ -96,6 +96,6 @@ class TestMBRL(TestCase):
 
         learner = MBRLLearner(state_dim=state_dim, action_dim=action_dim, env=env,
                               num_episodes=num_episodes, episode_len=episode_len, reward=reward,
-                              terminate=None, batch_size=batch_size, train_buffer_len=train_buffer_len,
+                              terminate=None, batch_size=batch_size, num_rand_eps=train_buffer_len,
                               save_name="pend_demo_256", normalize=True)
         learner.train()

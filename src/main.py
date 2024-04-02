@@ -9,10 +9,10 @@ def run_mbrl():
     state_dim = 2
     action_dim = 1
     env = gym.make("Pendulum-v1")
-    num_episodes = 2010
+    num_episodes = 20
     episode_len = 200
     batch_size = 256
-    train_buffer_len = 2000  # Right now have it set to only supervised learning
+    train_buffer_len = 10  # Right now have it set to only supervised learning
 
     def angle_normalize(x):
         return ((x + np.pi) % (2 * np.pi)) - np.pi
@@ -30,7 +30,7 @@ def run_mbrl():
 
     learner = MBRLLearner(state_dim=state_dim, action_dim=action_dim, env=env,
                           num_episodes=num_episodes, episode_len=episode_len, reward=reward,
-                          terminate=None, batch_size=batch_size, train_buffer_len=train_buffer_len,
+                          terminate=None, batch_size=batch_size, num_rand_eps=train_buffer_len,
                           save_name="demo-4-1-2024", normalize=True)
     learner.train()
 

@@ -9,16 +9,24 @@ Transition = collections.namedtuple('Transition', ('state', 'action', 'next_stat
 class ReplayBuffer:
 
     def __init__(self, state_dim, action_dim, max_size=10000, normalize=False):
-        self.data = collections.deque([], maxlen=max_size)
+        self.rand_data = collections.deque([], maxlen=max_size)
+        self.rl_data = collections.deque([], maxlen=max_size)
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.state_mean, self.state_var = np.zeros(self.state_dim), np.ones(self.state_dim)
         self.action_mean, self.action_var = np.zeros(self.action_dim), np.ones(self.action_dim)
         self.normalize = normalize
 
-    def push(self, state, action, next_state):
+    def push(self, state, action, next_state, rl):
         """
         Push (s, a, s') tuple to replay memory where 'state', 'action', and 'next_state' are not yet normalized.
+        Parameters
+        ----------
+        state : np.array
+        action : np.array
+        next_state : np.array
+        rl : bool
+            True if 'a' in (s, a, s') is chosen by MPC (not random)
         """
         # Update means and variances
         if self.__len__() > 1 and self.normalize:
@@ -31,19 +39,50 @@ class ReplayBuffer:
 
         # Push normalized data into replay buffer
         transition = Transition(state, action, next_state)
-        self.data.append(transition)
+        if rl:
+            self.rl_data.append(transition)
+        else:
+            self.rand_data.append(transition)
 
-    def sample(self, batch_size):
+    def sample(self, batch_size, rl_prop=0):
         """
         Sample a batch of experiences from replay. Note that the third element returned is
         'next_state - state', NOT 'next_state'.
-        """
-        transitions = random.sample(self.data, batch_size)
-        batch = Transition(*zip(*transitions))
 
-        state = np.array(batch.state)
-        action = np.array(batch.action)
-        next_state = np.array(batch.next_state)
+        Parameters
+        ----------
+        batch_size : int
+            Number of tuples to sample from buffer
+        rl_prop : float in [0, 1]
+            Fraction of samples that come from rl_data (as opposed to rand_data)
+        """
+
+        # Get samples from random actions
+        rand_transitions = random.sample(self.rand_data, int(np.ceil(batch_size * (1-rl_prop))))
+        rand_batch = Transition(*zip(*rand_transitions))
+
+        rand_state = np.array(rand_batch.state)
+        rand_action = np.array(rand_batch.action)
+        rand_next_state = np.array(rand_batch.next_state)
+
+        if rl_prop > 0:
+            # Get  samples from MPC actions
+            rl_batch_size = int(np.min([np.floor(batch_size * rl_prop), len(self.rl_data)]))
+            rl_transitions = random.sample(self.rl_data, rl_batch_size)
+            rl_batch = Transition(*zip(*rl_transitions))
+
+            rl_state = np.array(rl_batch.state)
+            rl_action = np.array(rl_batch.action)
+            rl_next_state = np.array(rl_batch.next_state)
+
+            # Combine samples
+            state = np.concatenate((rand_state, rl_state), axis=0)
+            action = np.concatenate((rand_action, rl_action), axis=0)
+            next_state = np.concatenate((rand_next_state, rl_next_state), axis=0)
+        else:
+            state = rand_state
+            action = rand_action
+            next_state = rand_next_state
 
         # Normalize data
         if self.normalize:
@@ -92,4 +131,4 @@ class ReplayBuffer:
         return self.action_var
 
     def __len__(self):
-        return len(self.data)
+        return len(self.rand_data) + len(self.rl_data)
