@@ -9,14 +9,15 @@ def run_mbrl():
     state_dim = 27
     action_dim = 8
     env = gym.make("Ant-v4")
-    num_episodes = 4000
+    num_episodes = 4100
     episode_len = 200
     batch_size = 256
-    num_rand_eps = num_episodes
+    num_rand_eps = 4000
 
     def reward(state, action):
         x_vel = state[13]
-        return x_vel + 0.5 - 0.005 * np.linalg.norm(action/150)**2
+        # return x_vel + 0.5 - 0.005 * np.linalg.norm(action/150)**2
+        return x_vel + 0.5 - 0.5/8 * np.linalg.norm(action) ** 2
 
     def terminate(state, action, t):
         return state[0] < 0.2 or state[0] > 1.0

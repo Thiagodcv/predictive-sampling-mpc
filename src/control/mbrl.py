@@ -71,7 +71,7 @@ class MBRLLearner:
         # MPC Parameters
         self.num_traj = 1024  # 50
         self.gamma = 0.99
-        self.horizon = 10  # 15
+        self.horizon = 15
         self.reward = reward
         self.terminate = terminate
         self.policy = MPC(self.model, self.num_traj, self.gamma, self.horizon, self.reward, True, self.terminate)
@@ -160,8 +160,8 @@ class MBRLLearner:
             action = policy.random_shooting(o)
             next_o, reward, terminated, truncated, _ = env.step(action)
             ret += gamma**t * reward
-            # if terminated or truncated:
-            #     break
+            if terminated or truncated:
+                break
             o = next_o
         env.close()
 

@@ -17,7 +17,8 @@ import cProfile
 
 def reward(state, action):
     x_vel = state[13]
-    return x_vel + 0.5 - 0.005 * np.linalg.norm(action/150) ** 2
+    # return x_vel + 0.5 - 0.005 * np.linalg.norm(action/150) ** 2
+    return x_vel + 0.5 - 0.5 / 8 * np.linalg.norm(action) ** 2
 
 
 def terminate(state, action, t):
@@ -27,14 +28,14 @@ def terminate(state, action, t):
 def ant():
     state_dim = 27
     action_dim = 8
-    episode_len = 400
+    episode_len = 200
     env = gym.make("Ant-v4", render_mode="human")
 
     model = DynamicsModel(state_dim, action_dim, normalize=True)
     model.load_state_dict(torch.load(os.path.join(MODELS_PATH, "ant-4-2.pt")))
 
-    num_traj = 4096  # Make sure it's divisible by num_workers
-    gamma = 0.999
+    num_traj = 1024  # Make sure it's divisible by num_workers
+    gamma = 0.99
     horizon = 15
 
     # Ray stuff
