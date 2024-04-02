@@ -9,10 +9,10 @@ def run_mbrl():
     state_dim = 27
     action_dim = 8
     env = gym.make("Ant-v4")
-    num_episodes = 4100
+    num_episodes = 2100
     episode_len = 200
     batch_size = 256
-    num_rand_eps = 4000
+    num_rand_eps = 2000
 
     def reward(state, action):
         x_vel = state[13]

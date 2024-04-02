@@ -53,6 +53,8 @@ class MBRLLearner:
         self.eval_num = 5
         self.num_rand_eps = num_rand_eps
         self.normalize = normalize
+        self.override_env_reward = True
+        self.override_env_terminate = True
 
         # Replay Buffer
         self.replay_buffer = ReplayBuffer(state_dim, action_dim, normalize=self.normalize)
@@ -81,31 +83,45 @@ class MBRLLearner:
         Train the MBRL agent.
         """
         for ep in range(self.num_episodes):
-            print("Episode {}".format(ep))
-
             if self.replay_buffer.__len__() > self.batch_size:
                 self.update_model_statistics()
                 self.update_dynamics(ep - 5)  # Only use rl data after 5 rl episodes
 
             o, _ = self.env.reset()
+            ep_ret = 0
+            ep_len = 0
             self.policy.empty_past_trajectory()
             for t in range(self.episode_len):
-                # Only start MPC once a full episode has passed
+
+                # Only start MPC after num_rand_eps number of episodes where only random actions taken
                 if ep >= self.num_rand_eps:
                     action = self.policy.random_shooting(o)
                 else:
-                    # action = np.random.uniform(low=-10, high=10, size=(1,))  # pendulum
                     action = np.random.uniform(low=-1, high=1, size=(8,))
 
                 next_o, reward, terminated, truncated, _ = self.env.step(action)
+
+                # Use custom reward function
+                if self.override_env_reward:
+                    reward = self.reward(o, action)
+                ep_ret += (self.gamma ** t)*reward
+
+                # Use custom termination condition
+                if self.override_env_terminate:
+                    terminated = self.terminate(o, action, t)
+                    truncated = False
+
                 if terminated or truncated:
+                    ep_len = t
                     break
+
                 self.replay_buffer.push(o, action, next_o, ep >= self.num_rand_eps)
                 o = next_o
             self.env.close()
 
-            if ep % self.eval_num == 0 and ep >= self.num_rand_eps:  # Keep latter condition in for a bit
-                self.eval_model()
+            print("Episode {} finished after {} time steps with return {}".format(ep, ep_len, ep_ret))
+            # if ep % self.eval_num == 0 and ep >= self.num_rand_eps:  # Keep latter condition in for a bit
+            #     self.eval_model()
 
         # Save trained dynamics model
         if self.save_name is None:
