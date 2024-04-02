@@ -9,7 +9,7 @@ def run_mbrl():
     state_dim = 2
     action_dim = 1
     env = gym.make("Pendulum-v1")
-    num_episodes = 2010
+    num_episodes = 2020
     episode_len = 200
     batch_size = 256
     num_rand_eps = 2000  # Right now have it set to only supervised learning
