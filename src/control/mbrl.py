@@ -15,7 +15,7 @@ class MBRLLearner:
     """
 
     def __init__(self, state_dim, action_dim, env, num_episodes, episode_len,
-                 reward, terminate=None, lr=1e-3, batch_size=16, train_buffer_len=2000,
+                 reward, terminate=None, lr=1e-3, batch_size=16, num_rand_eps=2000,
                  save_name=None, normalize=False):
         """
         Parameters
@@ -37,7 +37,7 @@ class MBRLLearner:
             Learning rate for dynamics model.
         batch_size : int
             Batch size for dynamics model training.
-        train_buffer_len : int
+        num_rand_eps : int
             Number of episodes in the beginning of training where MPC not utilized (random action taken).
         save_name : str
             The name of the trained dynamics model saved.
@@ -50,12 +50,13 @@ class MBRLLearner:
         self.env = env
         self.num_episodes = num_episodes
         self.episode_len = episode_len
-        self.eval_num = 1
-        self.train_buffer_len = train_buffer_len
+        self.eval_num = 5
+        self.num_rand_eps = num_rand_eps
         self.normalize = normalize
 
         # Replay Buffer
         self.replay_buffer = ReplayBuffer(state_dim, action_dim, normalize=self.normalize)
+        self.rl_prop = 0.4  # After fully random episodes are done, batches should contain this fraction of RL data
 
         # Dynamics Model Trainings Parameters
         self.lr = lr
@@ -68,12 +69,12 @@ class MBRLLearner:
         self.save_name = save_name
 
         # MPC Parameters
-        self.num_traj = 25  # 50
+        self.num_traj = 1000  # 50
         self.gamma = 0.99
         self.horizon = 10  # 15
         self.reward = reward
         self.terminate = terminate
-        self.policy = MPC(self.model, self.num_traj, self.gamma, self.horizon, self.reward, self.terminate)
+        self.policy = MPC(self.model, self.num_traj, self.gamma, self.horizon, self.reward, True, self.terminate)
 
     def train(self):
         """
@@ -84,13 +85,13 @@ class MBRLLearner:
 
             if self.replay_buffer.__len__() > self.batch_size:
                 self.update_model_statistics()
-                self.update_dynamics()
+                self.update_dynamics(ep - 5)  # Only use rl data after 5 rl episodes
 
             o, _ = self.env.reset()
             self.policy.empty_past_trajectory()
             for t in range(self.episode_len):
                 # Only start MPC once a full episode has passed
-                if ep > self.train_buffer_len:
+                if ep >= self.num_rand_eps:
                     action = self.policy.random_shooting(o)
                 else:
                     # action = np.random.binomial(n=1, p=0.5, size=(1,))  # Cartpole
@@ -99,11 +100,11 @@ class MBRLLearner:
                 next_o, reward, terminated, truncated, _ = self.env.step(action)
                 if terminated or truncated:
                     break
-                self.replay_buffer.push(o, action, next_o)
+                self.replay_buffer.push(o, action, next_o, ep >= self.num_rand_eps)
                 o = next_o
             self.env.close()
 
-            if ep % self.eval_num == 0 and ep > self.train_buffer_len - 1:
+            if ep % self.eval_num == 0 and ep >= self.num_rand_eps:  # Keep latter condition in for a bit
                 self.eval_model()
 
         # Save trained dynamics model
@@ -112,18 +113,23 @@ class MBRLLearner:
             self.save_name = now.strftime("%Y%m%d-%H%M%S")
         torch.save(self.model.state_dict(), os.path.join(MODELS_PATH, self.save_name + ".pt"))
 
-    def update_dynamics(self):
+    def update_dynamics(self, ep):
         """
         Update the dynamics model using sampled (s,a,s'-s) triplets stored in replay_buffer.
+        Parameters
+        ----------
+        ep : int
+            Episode number (in training)
         """
-        state, action, d_state = self.replay_buffer.sample(self.batch_size)
-        input = torch.from_numpy(np.concatenate((state, action), axis=1)).float().to(self.device)
-        target = torch.from_numpy(d_state).float().to(self.device)
-        self.optimizer.zero_grad()
-        output = self.model(input)
-        loss = self.loss(output, target)
-        loss.backward()
-        self.optimizer.step()
+        for i in range(4):
+            state, action, d_state = self.replay_buffer.sample(self.batch_size, self.rl_prop * (ep >= self.num_rand_eps))
+            input = torch.from_numpy(np.concatenate((state, action), axis=1)).float().to(self.device)
+            target = torch.from_numpy(d_state).float().to(self.device)
+            self.optimizer.zero_grad()
+            output = self.model(input)
+            loss = self.loss(output, target)
+            loss.backward()
+            self.optimizer.step()
 
     def eval_model(self):
 
