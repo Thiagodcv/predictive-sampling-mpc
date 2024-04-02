@@ -105,7 +105,7 @@ class MBRLLearner:
                 o = next_o
             self.env.close()
 
-            if ep % self.eval_num == 0:  # and ep >= self.num_rand_eps:
+            if ep % self.eval_num == 0:
                 self.eval_model()
 
         # Save trained dynamics model
