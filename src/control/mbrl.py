@@ -69,7 +69,7 @@ class MBRLLearner:
         self.save_name = save_name
 
         # MPC Parameters
-        self.num_traj = 1000  # 50
+        self.num_traj = 1024  # 50
         self.gamma = 0.99
         self.horizon = 10  # 15
         self.reward = reward
