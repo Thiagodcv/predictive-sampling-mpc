@@ -7,7 +7,6 @@ from src.control.replay_buffer import ReplayBuffer
 import os
 from datetime import datetime
 from src.constants import MODELS_PATH
-import ray
 
 
 class MBRLLearner:
@@ -105,7 +104,7 @@ class MBRLLearner:
                 o = next_o
             self.env.close()
 
-            if ep % self.eval_num == 0:
+            if ep % self.eval_num == 0 and ep >= self.num_rand_eps:  # Keep latter condition in for a bit
                 self.eval_model()
 
         # Save trained dynamics model
@@ -122,14 +121,15 @@ class MBRLLearner:
         ep : int
             Episode number (in training)
         """
-        state, action, d_state = self.replay_buffer.sample(self.batch_size, self.rl_prop * (ep >= self.num_rand_eps))
-        input = torch.from_numpy(np.concatenate((state, action), axis=1)).float().to(self.device)
-        target = torch.from_numpy(d_state).float().to(self.device)
-        self.optimizer.zero_grad()
-        output = self.model(input)
-        loss = self.loss(output, target)
-        loss.backward()
-        self.optimizer.step()
+        for i in range(4):
+            state, action, d_state = self.replay_buffer.sample(self.batch_size, self.rl_prop * (ep >= self.num_rand_eps))
+            input = torch.from_numpy(np.concatenate((state, action), axis=1)).float().to(self.device)
+            target = torch.from_numpy(d_state).float().to(self.device)
+            self.optimizer.zero_grad()
+            output = self.model(input)
+            loss = self.loss(output, target)
+            loss.backward()
+            self.optimizer.step()
 
     def eval_model(self):
 
