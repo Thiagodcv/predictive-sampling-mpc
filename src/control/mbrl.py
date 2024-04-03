@@ -68,7 +68,13 @@ class MBRLLearner:
         self.model = DynamicsModel(self.state_dim, self.action_dim, self.normalize).to(self.device)
         self.loss = nn.MSELoss()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
-        self.save_name = save_name
+
+        if save_name is None:
+            now = datetime.now()
+            self.save_name = now.strftime("%Y%m%d-%H%M%S")
+        else:
+            self.save_name = save_name
+        self.save_every_n_episodes = 10
 
         # MPC Parameters
         self.num_traj = 1024  # 50
@@ -125,20 +131,21 @@ class MBRLLearner:
             ret_list.append(ep_ret)
             trunc_list.append(ep_len)
 
-            if ep % self.print_results_buff == 0 and ep != 0:
-                print("Episodes {}-{} finished | mean return: {} | return variance: {} | mean time of termination: {}"
-                      .format(ep - self.print_results_buff,
+            if (ep + 1) % self.print_results_buff == 0 and ep != 0:
+                print("Episodes {}-{} finished | mean return: {} | return stdev: {} | mean time of termination: {}"
+                      .format(ep - self.print_results_buff + 1,
                               ep,
                               np.mean(ret_list),
-                              np.var(ret_list),
+                              np.std(ret_list),
                               np.mean(trunc_list)))
                 ret_list.clear()
                 trunc_list.clear()
 
-        # Save trained dynamics model
-        if self.save_name is None:
-            now = datetime.now()
-            self.save_name = now.strftime("%Y%m%d-%H%M%S")
+            # Save trained dynamics model every n episodes
+            if (ep + 1) % self.save_every_n_episodes == 0 and ep != 0:
+                torch.save(self.model.state_dict(), os.path.join(MODELS_PATH, self.save_name + ".pt"))
+
+        # Save when training ends
         torch.save(self.model.state_dict(), os.path.join(MODELS_PATH, self.save_name + ".pt"))
 
     def update_dynamics(self, ep):
