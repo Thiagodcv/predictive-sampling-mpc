@@ -32,7 +32,7 @@ def ant():
     env = gym.make("Ant-v4", render_mode="human")
 
     model = DynamicsModel(state_dim, action_dim, normalize=True)
-    model.load_state_dict(torch.load(os.path.join(MODELS_PATH, "ant-4-2.pt")))
+    model.load_state_dict(torch.load(os.path.join(MODELS_PATH, "ant-4-3.pt")))
 
     num_traj = 1024  # Make sure it's divisible by num_workers
     gamma = 0.99
@@ -43,7 +43,7 @@ def ant():
     print("Number of workers: ", num_workers)
     ray.init(num_cpus=num_workers)
 
-    mpc = MPC(model, num_traj, gamma, horizon, reward, True, terminate)
+    mpc = MPC(model, num_traj, gamma, horizon, reward, terminate, True)
 
     start_time = time.time()
     MBRLLearner.static_eval_model(env, episode_len, mpc, gamma, reward_func=reward, terminate_func=terminate)

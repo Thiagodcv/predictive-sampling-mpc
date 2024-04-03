@@ -14,75 +14,104 @@ class MBRLLearner:
     A class for training a model-based reinforcement learning agent.
     """
 
-    def __init__(self, state_dim, action_dim, env, num_episodes, episode_len,
-                 reward, terminate=None, lr=1e-3, batch_size=16, num_rand_eps=2000,
-                 save_name=None, normalize=False):
+    def __init__(self, env_dict, train_dict, mpc_dict, misc_dict):
         """
         Parameters
         ----------
-        state_dim : int
-            Dimension of the state space.
-        action_dim : int
-            Dimension of the action space.
-        env : gym.Env
-        num_episodes : int
-            Number of episodes to train for.
-        episode_len : int
-            The length of each episode.
-        reward : function
-            The instantaneous reward function at each timestep.
-        terminate : function
-            For a given (s, a, t) tuple returns true if episode has ended.
-        lr : float
-            Learning rate for dynamics model.
-        batch_size : int
-            Batch size for dynamics model training.
-        num_rand_eps : int
-            Number of episodes in the beginning of training where MPC not utilized (random action taken).
-        save_name : str
-            The name of the trained dynamics model saved.
-        normalize : boolean
-            If true, normalizes the data dynamics mode is trained on.
+        env_dict : dict
+            A dictionary containing parameters related to the environment. Keys-value pairs are
+            - state_dim : int
+                Dimension of the state space
+            - action_dim : int
+                Dimension of the action space
+            - env : gym.Env
+
+        train_dict : dict
+            A dictionary containing parameters related to training. Key-value pairs are
+            - num_episodes : int
+                Number of episodes to train for
+            - episode_len : int
+                Number of time steps in each episode
+            - reward : function
+                Reward function at each timestep
+            - terminate : function
+                Termination condition at each timestep
+            - lr : float
+                Learning rate for training dynamics model
+            - batch_size : int
+                Batch size for training dynamics model
+            - num_rand_eps : int
+                Number of episodes at beginning of training where all actions are randomly chosen
+            - rl_prop : float in [0, 1]
+                Proportion of data in each batch that comes from MPC-chosen actions
+
+        mpc_dict : dict
+            A dictionary containing parameters related to the MPC controller. Key-value pairs are
+            - num_traj : int
+                Number of trajectories to sample at each timestep
+            - gamma : float in (0, 1]
+                Discount factor for computing returns (both in mbrl.py and mpc.py)
+            - horizon : int
+                Number of timesteps to estimate optimal trajectories at each timestep
+
+        misc_dict : dict
+            A dictionary containing miscellaneous parameters. Key-value paris are
+            - save_name : str
+                Name of dynamics model that will be saved
+            - save_every_n_episodes : int
+                Dynamics model will be saved every n episodes
+            - print_every_n_episodes : int
+                Training results will be printed every n episodes
+            - normalize : bool
+                If true, state-action will be normalized (if using multithreading, must be set to True)
+            - override_env_reward : bool
+                If true, reward from environment will be overriden by reward given in train_dict
+            - override_env_terminate : bool
+                If true, termination condition from environment will be overriden by termination
+                function given in train_dict
         """
-        # RL Training Parameters
-        self.state_dim = state_dim
-        self.action_dim = action_dim
-        self.env = env
-        self.num_episodes = num_episodes
-        self.episode_len = episode_len
-        self.print_results_buff = 100
-        self.num_rand_eps = num_rand_eps
-        self.normalize = normalize
-        self.override_env_reward = True
-        self.override_env_terminate = True
+        # Environment Parameters
+        self.state_dim = env_dict['state_dim']
+        self.action_dim = env_dict['action_dim']
+        self.env = env_dict['env']
+
+        # Training Parameters
+        self.num_episodes = train_dict['num_episodes']
+        self.episode_len = train_dict['episode_len']
+        self.reward = train_dict['reward']
+        self.terminate = train_dict['terminate']
+        self.lr = train_dict['lr']
+        self.batch_size = train_dict['batch_size']
+        self.num_rand_eps = train_dict['num_rand_eps']
+        self.rl_prop = train_dict['rl_prop']
+
+        # Miscellaneous Parameters
+        self.print_every_n_episodes = misc_dict['print_every_n_episodes']
+        self.normalize = misc_dict['normalize']
+        self.override_env_reward = misc_dict['override_env_reward']
+        self.override_env_terminate = misc_dict['override_env_terminate']
+        self.save_name = misc_dict['save_name']
+        self.save_every_n_episodes = misc_dict['save_every_n_episodes']
+
+        if self.save_name is None:
+            now = datetime.now()
+            self.save_name = now.strftime("%Y%m%d-%H%M%S")
 
         # Replay Buffer
-        self.replay_buffer = ReplayBuffer(state_dim, action_dim, normalize=self.normalize)
-        self.rl_prop = 0.4  # After fully random episodes are done, batches should contain this fraction of RL data
+        self.replay_buffer = ReplayBuffer(self.state_dim, self.action_dim, normalize=self.normalize)
 
         # Dynamics Model Trainings Parameters
-        self.lr = lr
-        self.batch_size = batch_size
         self.device = torch.device("cpu")  # torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using device: {self.device}")
         self.model = DynamicsModel(self.state_dim, self.action_dim, self.normalize).to(self.device)
         self.loss = nn.MSELoss()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
 
-        if save_name is None:
-            now = datetime.now()
-            self.save_name = now.strftime("%Y%m%d-%H%M%S")
-        else:
-            self.save_name = save_name
-        self.save_every_n_episodes = 500
-
         # MPC Parameters
-        self.num_traj = 1024  # 50
-        self.gamma = 0.99
-        self.horizon = 15
-        self.reward = reward
-        self.terminate = terminate
-        self.policy = MPC(self.model, self.num_traj, self.gamma, self.horizon, self.reward, True, self.terminate)
+        self.num_traj = mpc_dict['num_traj']
+        self.gamma = mpc_dict['gamma']
+        self.horizon = mpc_dict['horizon']
+        self.policy = MPC(self.model, self.num_traj, self.gamma, self.horizon, self.reward, self.terminate, True)
 
     def train(self):
         """
@@ -131,9 +160,9 @@ class MBRLLearner:
             ret_list.append(ep_ret)
             trunc_list.append(ep_len)
 
-            if (ep + 1) % self.print_results_buff == 0 and ep != 0:
+            if (ep + 1) % self.print_every_n_episodes == 0 and ep != 0:
                 print("Episodes {}-{} finished | mean return: {} | return stdev: {} | mean time of termination: {}"
-                      .format(ep - self.print_results_buff + 1,
+                      .format(ep - self.print_every_n_episodes + 1,
                               ep,
                               np.mean(ret_list),
                               np.std(ret_list),
