@@ -50,7 +50,7 @@ class MBRLLearner:
         self.env = env
         self.num_episodes = num_episodes
         self.episode_len = episode_len
-        self.print_results_buff = 5
+        self.print_results_buff = 100
         self.num_rand_eps = num_rand_eps
         self.normalize = normalize
         self.override_env_reward = True
@@ -74,7 +74,7 @@ class MBRLLearner:
             self.save_name = now.strftime("%Y%m%d-%H%M%S")
         else:
             self.save_name = save_name
-        self.save_every_n_episodes = 10
+        self.save_every_n_episodes = 500
 
         # MPC Parameters
         self.num_traj = 1024  # 50
@@ -144,9 +144,11 @@ class MBRLLearner:
             # Save trained dynamics model every n episodes
             if (ep + 1) % self.save_every_n_episodes == 0 and ep != 0:
                 torch.save(self.model.state_dict(), os.path.join(MODELS_PATH, self.save_name + ".pt"))
+                print("-- Model saved --")
 
         # Save when training ends
         torch.save(self.model.state_dict(), os.path.join(MODELS_PATH, self.save_name + ".pt"))
+        print("-- Model saved --")
 
     def update_dynamics(self, ep):
         """
