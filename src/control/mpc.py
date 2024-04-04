@@ -9,7 +9,7 @@ class MPC:
     A class implementation of a predictive sampling MPC.
     """
 
-    def __init__(self, model, num_traj, gamma, horizon, reward, multithreading, terminate=None):
+    def __init__(self, model, num_traj, gamma, horizon, reward, terminate=None, multithreading=True):
         """
         Parameters
         ----------
@@ -22,9 +22,9 @@ class MPC:
             Number of steps optimized over by the MPC controller.
         reward: function
             The instantaneous reward given at each timestep.
-        multithreading: bool
         terminate : function
              For a given (s, a, t) tuple returns true if episode has ended.
+        multithreading: bool
         """
         self.model = model
         self.num_traj = num_traj
@@ -53,7 +53,7 @@ class MPC:
         else:
             action_seqs = self.past_trajectory + np.random.normal(loc=0, scale=1.0,
                                                                   size=(self.num_traj, self.horizon, 8))
-            action_seqs = np.clip(action_seqs, -1.0, 1.0)
+            action_seqs = np.clip(action_seqs, -0.3, 0.3)
 
         # Evaluate action sequences
         if not self.multithreading:

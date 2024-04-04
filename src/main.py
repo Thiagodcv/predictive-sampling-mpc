@@ -5,32 +5,56 @@ import multiprocessing
 import ray
 
 
+def reward(state, action):
+    x_vel = state[13]
+    # return x_vel + 0.5 - 0.005 * np.linalg.norm(action/150)**2
+    return x_vel + 0.5 - 0.5 / 8 * np.linalg.norm(action) ** 2
+
+
+def terminate(state, action, t):
+    return state[0] < 0.2 or state[0] > 1.0
+
+
 def run_mbrl():
-    state_dim = 27
-    action_dim = 8
-    env = gym.make("Ant-v4")
-    num_episodes = 4100
-    episode_len = 200
-    batch_size = 256
-    num_rand_eps = 4000
 
-    def reward(state, action):
-        x_vel = state[13]
-        # return x_vel + 0.5 - 0.005 * np.linalg.norm(action/150)**2
-        return x_vel + 0.5 - 0.5/8 * np.linalg.norm(action) ** 2
+    env_dict = {
+        'state_dim': 27,
+        'action_dim': 8,
+        "env": gym.make("Ant-v4")
+    }
 
-    def terminate(state, action, t):
-        return state[0] < 0.2 or state[0] > 1.0
+    train_dict = {
+        'num_episodes': 10000,
+        'num_rand_eps': 10000,
+        'episode_len': 200,
+        'reward': reward,
+        'terminate': terminate,
+        'lr': 1e-3,
+        'batch_size': 256,
+        'rl_prop': 0.4
+    }
 
-    # Ray stuff
+    mpc_dict = {
+        'num_traj': 1024,
+        'gamma': 0.99,
+        'horizon': 15
+    }
+
+    misc_dict = {
+        'normalize': True,
+        'override_env_reward': True,
+        'override_env_terminate': True,
+        'save_name': 'ant-4-3',
+        'save_every_n_episodes': 500,
+        'print_every_n_episodes': 100
+    }
+
+    # Stuff for Multi-threading using Ray
     num_workers = multiprocessing.cpu_count()
     print("Number of workers: ", num_workers)
     ray.init(num_cpus=num_workers)
 
-    learner = MBRLLearner(state_dim=state_dim, action_dim=action_dim, env=env,
-                          num_episodes=num_episodes, episode_len=episode_len, reward=reward,
-                          terminate=terminate, batch_size=batch_size, num_rand_eps=num_rand_eps,
-                          save_name="ant-4-2", normalize=True)
+    learner = MBRLLearner(env_dict=env_dict, train_dict=train_dict, mpc_dict=mpc_dict, misc_dict=misc_dict)
     learner.train()
 
 
