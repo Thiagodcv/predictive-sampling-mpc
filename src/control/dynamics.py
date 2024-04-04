@@ -28,11 +28,11 @@ class DynamicsModel(nn.Module):
         self.normalize = normalize
 
         self.linear_relu_stack = nn.Sequential(
-            nn.Linear(state_dim + action_dim, 256),
+            nn.Linear(state_dim + action_dim, 512),
             nn.ReLU(),
-            nn.Linear(256, 256),
+            nn.Linear(512, 512),
             nn.ReLU(),
-            nn.Linear(256, state_dim)
+            nn.Linear(512, state_dim)
         )
 
         # self.linear_relu_stack = nn.Sequential(

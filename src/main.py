@@ -24,8 +24,8 @@ def run_mbrl():
     }
 
     train_dict = {
-        'num_episodes': 2000,
-        'num_rand_eps': 2000,
+        'num_episodes': 10000,
+        'num_rand_eps': 10000,
         'episode_len': 200,
         'reward': reward,
         'terminate': terminate,
@@ -37,7 +37,7 @@ def run_mbrl():
     mpc_dict = {
         'num_traj': 1024,
         'gamma': 0.99,
-        'horizon': 10
+        'horizon': 15
     }
 
     misc_dict = {

@@ -170,9 +170,10 @@ class MBRLLearner:
                 ret_list.clear()
                 trunc_list.clear()
 
-            # Save trained dynamics model every n episodes
+            # Save trained dynamics model every n episodes, and do MPC eval
             if (ep + 1) % self.save_every_n_episodes == 0 and ep != 0:
                 torch.save(self.model.state_dict(), os.path.join(MODELS_PATH, self.save_name + ".pt"))
+                self.eval_model()  # Whenever a model is saved, run model with MPC
                 print("-- Model saved --")
 
         # Save when training ends
