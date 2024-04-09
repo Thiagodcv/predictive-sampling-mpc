@@ -197,7 +197,7 @@ class MBRLLearner:
 
                 # Only start MPC after num_rand_eps number of episodes where only random actions taken
                 if ep < self.num_rand_eps or np.random.uniform(low=0, high=1.0) < self.epsilon:
-                    action = np.random.uniform(low=-1, high=1, size=(8,))
+                    action = np.random.uniform(low=-0.3, high=0.3, size=(8,))
                 else:
                     action = self.policy.random_shooting(o)
 
