@@ -129,19 +129,22 @@ class MBRLLearner:
         os.mkdir(self.dir_path)
 
         # Delete key-value pairs with values that can't be converted to string
-        del env_dict['env']
-        del train_dict['reward']
-        del train_dict['terminate']
+        env_dict_copy = env_dict.copy()
+        train_dict_copy = train_dict.copy()
+
+        del env_dict_copy['env']
+        del train_dict_copy['reward']
+        del train_dict_copy['terminate']
 
         f_dict = open(os.path.join(self.dir_path, self.dict_file_name), 'a')
         f_dict.write('env_dict:\n')
         f_dict.write('---------\n')
-        f_dict.write(json.dumps(env_dict))
+        f_dict.write(json.dumps(env_dict_copy))
         f_dict.write('\n\n')
 
         f_dict.write('train_dict:\n')
         f_dict.write('---------\n')
-        f_dict.write(json.dumps(train_dict))
+        f_dict.write(json.dumps(train_dict_copy))
         f_dict.write('\n\n')
 
         f_dict.write('mpc_dict:\n')
