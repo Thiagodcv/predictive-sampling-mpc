@@ -45,6 +45,8 @@ class MBRLLearner:
                 Number of episodes at beginning of training where all actions are randomly chosen
             - rl_prop : float in [0, 1]
                 Proportion of data in each batch that comes from MPC-chosen actions
+            - epsilon : float in [0, 1]
+                Fraction of actions taken per episode that are randomly generated (Epsilon Greedy)
 
         mpc_dict : dict
             A dictionary containing parameters related to the MPC controller. Key-value pairs are
@@ -85,6 +87,7 @@ class MBRLLearner:
         self.batch_size = train_dict['batch_size']
         self.num_rand_eps = train_dict['num_rand_eps']
         self.rl_prop = train_dict['rl_prop']
+        self.epsilon = train_dict['epsilon']
 
         # Miscellaneous Parameters
         self.print_every_n_episodes = misc_dict['print_every_n_episodes']
@@ -193,10 +196,10 @@ class MBRLLearner:
             for t in range(self.episode_len):
 
                 # Only start MPC after num_rand_eps number of episodes where only random actions taken
-                if ep >= self.num_rand_eps:
-                    action = self.policy.random_shooting(o)
-                else:
+                if ep < self.num_rand_eps or np.random.uniform(low=0, high=1.0) < self.epsilon:
                     action = np.random.uniform(low=-1, high=1, size=(8,))
+                else:
+                    action = self.policy.random_shooting(o)
 
                 next_o, reward, terminated, truncated, _ = self.env.step(action)
 

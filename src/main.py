@@ -30,14 +30,15 @@ def run_mbrl(num_times=1):
     }
 
     train_dict = {
-        'num_episodes': 100, # 275,
-        'num_rand_eps': 100, # 25,
+        'num_episodes': 275,
+        'num_rand_eps': 25,
         'episode_len': 200,
         'reward': reward,
         'terminate': terminate,
         'lr': 1e-3,
         'batch_size': 256,
-        'rl_prop': 0.9
+        'rl_prop': 0.9,
+        'epsilon': 0.05
     }
 
     mpc_dict = {
