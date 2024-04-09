@@ -24,14 +24,14 @@ def run_mbrl():
     }
 
     train_dict = {
-        'num_episodes': 10000,
-        'num_rand_eps': 10000,
+        'num_episodes': 275,
+        'num_rand_eps': 25,
         'episode_len': 200,
         'reward': reward,
         'terminate': terminate,
         'lr': 1e-3,
         'batch_size': 256,
-        'rl_prop': 0.4
+        'rl_prop': 0.9
     }
 
     mpc_dict = {
@@ -44,9 +44,9 @@ def run_mbrl():
         'normalize': True,
         'override_env_reward': True,
         'override_env_terminate': True,
-        'save_name': 'ant-4-3',
-        'save_every_n_episodes': 500,
-        'print_every_n_episodes': 100
+        'save_name': 'ant-25-275-0.9rlprop-2',
+        'save_every_n_episodes': 50,
+        'print_every_n_episodes': 10
     }
 
     # Stuff for Multi-threading using Ray
