@@ -1,6 +1,7 @@
 from unittest import TestCase
 from control.mbrl import MBRLLearner
 import gymnasium as gym
+import numpy as np
 
 
 class TestMBRL(TestCase):
@@ -68,6 +69,33 @@ class TestMBRL(TestCase):
 
         learner = MBRLLearner(state_dim=state_dim, action_dim=action_dim, env=env,
                               num_episodes=num_episodes, episode_len=episode_len, reward=reward,
-                              terminate=terminate, batch_size=batch_size, train_buffer_len=train_buffer_len,
+                              terminate=terminate, batch_size=batch_size, num_rand_eps=train_buffer_len,
                               save_name="test_normalize", normalize=True)
+        learner.train()
+
+    def test_mbrl_pendulum(self):
+        """
+        Test to see if can run an example without crashing.
+        """
+        state_dim = 2
+        action_dim = 1
+        env = gym.make("Pendulum-v1")
+        num_episodes = 2000
+        episode_len = 200
+        batch_size = 256
+        train_buffer_len = num_episodes  # Right now have it set to only supervised learning
+
+        def angle_normalize(x):
+            return ((x + np.pi) % (2 * np.pi)) - np.pi
+
+        def reward(state, action):
+            th = state[0]
+            thdot = state[1]
+            u = action
+            return - (angle_normalize(th) ** 2 + 0.1 * thdot ** 2 + 0.001 * (u ** 2))
+
+        learner = MBRLLearner(state_dim=state_dim, action_dim=action_dim, env=env,
+                              num_episodes=num_episodes, episode_len=episode_len, reward=reward,
+                              terminate=None, batch_size=batch_size, num_rand_eps=train_buffer_len,
+                              save_name="pend_demo_256", normalize=True)
         learner.train()
