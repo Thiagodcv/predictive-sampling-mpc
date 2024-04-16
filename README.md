@@ -4,7 +4,7 @@ This repository is an implementation of a model-based reinforcement learning age
 to learn the system dynamics using a neural network. An MPC using a predictive sampling scheme is then used by the agent to determine the optimal action at each timestep within the environment.
 I've implemented training and evaluation on the Ant-v4 task.
 
-PLEASE NOTE: The "pendulum" and "cartpole" environment files no longer work on the main branch. Will include a requirements file soon.
+PLEASE NOTE: The "pendulum.py" and "cartpole.py" experiment files no longer work on the main branch. Will include a requirements file soon.
 
 ## Citations
 [1] Nagabandi, Anusha, et al. "Neural network dynamics for model-based deep reinforcement learning with model-free fine-tuning." 2018 IEEE international conference on robotics and automation (ICRA). IEEE, 2018.
