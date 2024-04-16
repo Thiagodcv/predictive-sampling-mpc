@@ -51,8 +51,8 @@ def run_mbrl(num_times=1):
         'normalize': True,
         'override_env_reward': True,
         'override_env_terminate': True,
-        'save_name': 'ant-25-275-0.9rlprop-2',
-        'save_every_n_episodes': 50,
+        'save_name': 'demo_model',
+        'save_every_n_episodes': 25,
         'print_every_n_episodes': 10
     }
 
