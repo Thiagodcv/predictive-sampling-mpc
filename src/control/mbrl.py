@@ -7,6 +7,7 @@ from src.control.replay_buffer import ReplayBuffer
 import os
 from datetime import datetime
 from src.constants import MODELS_PATH
+import json
 
 
 class MBRLLearner:
@@ -44,6 +45,8 @@ class MBRLLearner:
                 Number of episodes at beginning of training where all actions are randomly chosen
             - rl_prop : float in [0, 1]
                 Proportion of data in each batch that comes from MPC-chosen actions
+            - epsilon : float in [0, 1]
+                Fraction of actions taken per episode that are randomly generated (Epsilon Greedy)
 
         mpc_dict : dict
             A dictionary containing parameters related to the MPC controller. Key-value pairs are
@@ -84,6 +87,7 @@ class MBRLLearner:
         self.batch_size = train_dict['batch_size']
         self.num_rand_eps = train_dict['num_rand_eps']
         self.rl_prop = train_dict['rl_prop']
+        self.epsilon = train_dict['epsilon']
 
         # Miscellaneous Parameters
         self.print_every_n_episodes = misc_dict['print_every_n_episodes']
@@ -113,6 +117,67 @@ class MBRLLearner:
         self.horizon = mpc_dict['horizon']
         self.policy = MPC(self.model, self.num_traj, self.gamma, self.horizon, self.reward, self.terminate, True)
 
+        # Make model directory
+        self.dir_path = os.path.join(MODELS_PATH, self.save_name)
+        self.dict_file_name = 'dict_file.txt'
+        self.train_file_name = 'train.txt'
+        self.eval_file_name = 'eval.txt'
+        self.make_model_directory(env_dict, train_dict, mpc_dict, misc_dict)
+
+
+    def make_model_directory(self, env_dict, train_dict, mpc_dict, misc_dict):
+        """
+        Make a directory containing training information and model parameters
+        """
+        os.mkdir(self.dir_path)
+
+        # Delete key-value pairs with values that can't be converted to string
+        env_dict_copy = env_dict.copy()
+        train_dict_copy = train_dict.copy()
+
+        del env_dict_copy['env']
+        del train_dict_copy['reward']
+        del train_dict_copy['terminate']
+
+        f_dict = open(os.path.join(self.dir_path, self.dict_file_name), 'a')
+        f_dict.write('env_dict:\n')
+        f_dict.write('---------\n')
+        f_dict.write(json.dumps(env_dict_copy))
+        f_dict.write('\n\n')
+
+        f_dict.write('train_dict:\n')
+        f_dict.write('---------\n')
+        f_dict.write(json.dumps(train_dict_copy))
+        f_dict.write('\n\n')
+
+        f_dict.write('mpc_dict:\n')
+        f_dict.write('---------\n')
+        f_dict.write(json.dumps(mpc_dict))
+        f_dict.write('\n\n')
+
+        f_dict.write('misc_dict:\n')
+        f_dict.write('---------\n')
+        f_dict.write(json.dumps(misc_dict))
+        f_dict.close()
+
+        f_train = open(os.path.join(self.dir_path, self.train_file_name), 'a')
+        f_train.write('Episodes, Mean Ret, StDev, Mean Termination\n')
+        f_train.close()
+
+        f_eval = open(os.path.join(self.dir_path, self.eval_file_name), 'a')
+        f_eval.write('Episode, Ret\n')
+        f_eval.close()
+
+    def print_and_save_results(self, first_ep, last_ep, mean_ret, stdev, mean_termination):
+        # Print to stdout
+        print("Episodes {}-{} finished | mean return: {:.2f} | return stdev: {:.2f} | mean time of termination: {:.2f}"
+              .format(first_ep, last_ep,  mean_ret, stdev, mean_termination))
+
+        # Write to train file
+        f_train = open(os.path.join(self.dir_path, self.train_file_name), 'a')
+        f_train.write('{}-{}, {:.2f}, {:.2f}, {:.2f}\n'.format(first_ep, last_ep, mean_ret, stdev, mean_termination))
+        f_train.close()
+
     def train(self):
         """
         Train the MBRL agent.
@@ -131,10 +196,10 @@ class MBRLLearner:
             for t in range(self.episode_len):
 
                 # Only start MPC after num_rand_eps number of episodes where only random actions taken
-                if ep >= self.num_rand_eps:
-                    action = self.policy.random_shooting(o)
+                if ep < self.num_rand_eps or np.random.uniform(low=0, high=1.0) < self.epsilon:
+                    action = np.random.uniform(low=-0.3, high=0.3, size=(8,))
                 else:
-                    action = np.random.uniform(low=-1, high=1, size=(8,))
+                    action = self.policy.random_shooting(o)
 
                 next_o, reward, terminated, truncated, _ = self.env.step(action)
 
@@ -161,23 +226,22 @@ class MBRLLearner:
             trunc_list.append(ep_len)
 
             if (ep + 1) % self.print_every_n_episodes == 0 and ep != 0:
-                print("Episodes {}-{} finished | mean return: {} | return stdev: {} | mean time of termination: {}"
-                      .format(ep - self.print_every_n_episodes + 1,
-                              ep,
-                              np.mean(ret_list),
-                              np.std(ret_list),
-                              np.mean(trunc_list)))
+                self.print_and_save_results(first_ep=ep - self.print_every_n_episodes + 1,
+                                            last_ep=ep,
+                                            mean_ret=np.mean(ret_list),
+                                            stdev=np.std(ret_list),
+                                            mean_termination=np.mean(trunc_list))
                 ret_list.clear()
                 trunc_list.clear()
 
             # Save trained dynamics model every n episodes, and do MPC eval
             if (ep + 1) % self.save_every_n_episodes == 0 and ep != 0:
-                torch.save(self.model.state_dict(), os.path.join(MODELS_PATH, self.save_name + ".pt"))
-                self.eval_model()  # Whenever a model is saved, run model with MPC
+                torch.save(self.model.state_dict(), os.path.join(self.dir_path, self.save_name + ".pt"))
+                self.eval_model(ep)  # Whenever a model is saved, run model with MPC
                 print("-- Model saved --")
 
         # Save when training ends
-        torch.save(self.model.state_dict(), os.path.join(MODELS_PATH, self.save_name + ".pt"))
+        torch.save(self.model.state_dict(), os.path.join(self.dir_path, self.save_name + ".pt"))
         print("-- Model saved --")
 
     def update_dynamics(self, ep):
@@ -198,7 +262,7 @@ class MBRLLearner:
             loss.backward()
             self.optimizer.step()
 
-    def eval_model(self):
+    def eval_model(self, ep):
         o, _ = self.env.reset()
         self.policy.empty_past_trajectory()
         ret = 0
@@ -222,8 +286,14 @@ class MBRLLearner:
         self.env.close()
 
         print("----------------------------------------")
-        print("Model Evaluation: ret = {}".format(ret))
+        print("Model Evaluation: ret = {:.2f}".format(ret))
         print("----------------------------------------")
+
+        # Write to eval.txt
+        f_eval = open(os.path.join(self.dir_path, self.eval_file_name), 'a')
+        f_eval.write('{}, {:.2f}\n'.format(ep, ret))
+        f_eval.close()
+
 
     @staticmethod
     def static_eval_model(env, episode_len, policy, gamma, reward_func=None, terminate_func=None):
@@ -252,7 +322,7 @@ class MBRLLearner:
         env.close()
 
         print("----------------------------------------")
-        print("Model Evaluation: ret = {}".format(ret))
+        print("Model Evaluation: ret = {:.2f}".format(ret))
         print("----------------------------------------")
 
     def update_model_statistics(self):

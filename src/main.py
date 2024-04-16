@@ -15,12 +15,18 @@ def terminate(state, action, t):
     return state[0] < 0.2 or state[0] > 1.0
 
 
-def run_mbrl():
+def run_mbrl(num_times=1):
+    """
+    Parameters:
+    -----------
+    num_times: int
+        number of times to train a new model
+    """
 
     env_dict = {
         'state_dim': 27,
         'action_dim': 8,
-        "env": gym.make("Ant-v4")
+        'env': gym.make('Ant-v4')
     }
 
     train_dict = {
@@ -31,7 +37,8 @@ def run_mbrl():
         'terminate': terminate,
         'lr': 1e-3,
         'batch_size': 256,
-        'rl_prop': 0.9
+        'rl_prop': 0.9,
+        'epsilon': 0.05
     }
 
     mpc_dict = {
@@ -44,8 +51,8 @@ def run_mbrl():
         'normalize': True,
         'override_env_reward': True,
         'override_env_terminate': True,
-        'save_name': 'ant-25-275-0.9rlprop-2',
-        'save_every_n_episodes': 50,
+        'save_name': 'demo_model',
+        'save_every_n_episodes': 25,
         'print_every_n_episodes': 10
     }
 
@@ -54,9 +61,16 @@ def run_mbrl():
     print("Number of workers: ", num_workers)
     ray.init(num_cpus=num_workers)
 
-    learner = MBRLLearner(env_dict=env_dict, train_dict=train_dict, mpc_dict=mpc_dict, misc_dict=misc_dict)
-    learner.train()
+    if num_times > 1:
+        save_name = misc_dict['save_name']
+        for rep in range(num_times):
+            misc_dict['save_name'] = save_name + '-run' + str(rep)
+            learner = MBRLLearner(env_dict=env_dict, train_dict=train_dict, mpc_dict=mpc_dict, misc_dict=misc_dict)
+            learner.train()
+    else:
+        learner = MBRLLearner(env_dict=env_dict, train_dict=train_dict, mpc_dict=mpc_dict, misc_dict=misc_dict)
+        learner.train()
 
 
 if __name__ == "__main__":
-    run_mbrl()
+    run_mbrl(num_times=2)

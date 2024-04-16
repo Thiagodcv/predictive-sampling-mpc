@@ -31,8 +31,11 @@ def ant():
     episode_len = 200
     env = gym.make("Ant-v4", render_mode="human")
 
+    save_name = "ant-task-4-9-run0"
+    dir_path = os.path.join(MODELS_PATH, save_name)
+
     model = DynamicsModel(state_dim, action_dim, normalize=True)
-    model.load_state_dict(torch.load(os.path.join(MODELS_PATH, 'ant-25-275-0.9rlprop.pt')))
+    model.load_state_dict(torch.load(os.path.join(dir_path, save_name + '.pt')))
 
     num_traj = 1024  # Make sure it's divisible by num_workers
     gamma = 0.99
