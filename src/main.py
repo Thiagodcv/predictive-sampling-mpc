@@ -73,4 +73,4 @@ def run_mbrl(num_times=1):
 
 
 if __name__ == "__main__":
-    run_mbrl(num_times=2)
+    run_mbrl(num_times=1)
