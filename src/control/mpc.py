@@ -53,7 +53,7 @@ class MPC:
         else:
             action_seqs = self.past_trajectory + np.random.normal(loc=0, scale=1.0,
                                                                   size=(self.num_traj, self.horizon, 8))
-            action_seqs = np.clip(action_seqs, -0.3, 0.3)
+            action_seqs = np.clip(action_seqs, -0.2, 0.2)
 
         # Evaluate action sequences
         if not self.multithreading:
