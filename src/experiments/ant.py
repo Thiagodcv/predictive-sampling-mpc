@@ -1,17 +1,15 @@
-import numpy as np
-import torch
-import gymnasium as gym
 from src.control.mpc import MPC
 from src.control.dynamics import DynamicsModel
 from src.control.mbrl import MBRLLearner
 from src.constants import MODELS_PATH
+import numpy as np
+import torch
+import gymnasium as gym
 import os
-from multiprocessing.pool import ThreadPool
-import math
 import multiprocessing
 import ray
-
 import time
+from gymnasium.wrappers import RecordVideo
 import cProfile
 
 
@@ -29,17 +27,22 @@ def ant():
     state_dim = 27
     action_dim = 8
     episode_len = 200
-    env = gym.make("Ant-v4", render_mode="human")
 
-    save_name = "ant-task-4-9-run0"
+    save_name = "ant-task-4-9-run2"
     dir_path = os.path.join(MODELS_PATH, save_name)
+
+    # For recording. If want to record, need to define a RECORDINGS_PATH, and need to set render_mode = "rgb_array".
+    # env = gym.make("Ant-v4", render_mode="rgb_array")
+    # env = RecordVideo(env, video_folder=RECORDINGS_PATH, name_prefix=save_name, episode_trigger=lambda x: True)
+
+    env = gym.make("Ant-v4", render_mode="human")
 
     model = DynamicsModel(state_dim, action_dim, normalize=True)
     model.load_state_dict(torch.load(os.path.join(dir_path, save_name + '.pt')))
 
     num_traj = 1024  # Make sure it's divisible by num_workers
     gamma = 0.99
-    horizon = 15
+    horizon = 10
 
     # Ray stuff
     num_workers = multiprocessing.cpu_count()
