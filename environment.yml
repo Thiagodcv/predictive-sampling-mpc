@@ -1,0 +1,13 @@
+name: sampling-mpc-env
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.9
+  - pip=24.0
+  - moviepy=1.0.3
+  - gymnasium=0.28.1
+  - scipy=1.11.4
+  - pip:
+      - mujoco==2.3.0
+      - ray==2.10.0
