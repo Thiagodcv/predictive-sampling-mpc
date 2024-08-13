@@ -8,7 +8,7 @@ This repository is an implementation of a model-based reinforcement learning age
 ## Installation
 conda env create -f environment.yml
 
-conda activate gp-mpc-env
+conda activate sampling-mpc-env
 
 pip install torch --index-url https://download.pytorch.org/whl/cu118
 
