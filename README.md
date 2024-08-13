@@ -12,7 +12,7 @@ conda activate sampling-mpc-env
 
 pip install torch --index-url https://download.pytorch.org/whl/cu118
 
-After installing the necessary dependencies using the three commands above, insert one's absolute paths to the  `models` and `recordings` directory in `src/constants.py`.
+After installing the necessary dependencies using the three commands above, insert one's absolute paths to the  `models` and `recordings` directories in `src/constants.py`.
 
 ## Citations
 [1] Nagabandi, Anusha, et al. "Neural network dynamics for model-based deep reinforcement learning with model-free fine-tuning." 2018 IEEE international conference on robotics and automation (ICRA). IEEE, 2018.
