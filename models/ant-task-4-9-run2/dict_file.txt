@@ -1,0 +1,15 @@
+env_dict:
+---------
+{"state_dim": 27, "action_dim": 8}
+
+train_dict:
+---------
+{"num_episodes": 275, "num_rand_eps": 25, "episode_len": 200, "lr": 0.001, "batch_size": 256, "rl_prop": 0.9, "epsilon": 0.05}
+
+mpc_dict:
+---------
+{"num_traj": 1024, "gamma": 0.99, "horizon": 15}
+
+misc_dict:
+---------
+{"normalize": true, "override_env_reward": true, "override_env_terminate": true, "save_name": "ant-task-4-9-run2", "save_every_n_episodes": 25, "print_every_n_episodes": 10}

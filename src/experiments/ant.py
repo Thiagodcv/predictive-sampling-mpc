@@ -1,7 +1,7 @@
 from src.control.mpc import MPC
 from src.control.dynamics import DynamicsModel
 from src.control.mbrl import MBRLLearner
-from src.constants import MODELS_PATH
+from src.constants import MODELS_PATH, RECORDINGS_PATH
 import numpy as np
 import torch
 import gymnasium as gym
@@ -31,14 +31,14 @@ def ant():
     save_name = "ant-task-4-9-run2"
     dir_path = os.path.join(MODELS_PATH, save_name)
 
-    # For recording. If want to record, need to define a RECORDINGS_PATH, and need to set render_mode = "rgb_array".
+    # For recording. If want to record, and need to set render_mode = "rgb_array".
     # env = gym.make("Ant-v4", render_mode="rgb_array")
-    # env = RecordVideo(env, video_folder=RECORDINGS_PATH, name_prefix=save_name, episode_trigger=lambda x: True)
+    # env = RecordVideo(env, video_folder=RECORDINGS_PATH, name_prefix="Demo", episode_trigger=lambda x: True)
 
     env = gym.make("Ant-v4", render_mode="human")
 
     model = DynamicsModel(state_dim, action_dim, normalize=True)
-    model.load_state_dict(torch.load(os.path.join(dir_path, save_name + '.pt')))
+    model.load_state_dict(torch.load(os.path.join(dir_path, save_name + '.pt'), weights_only=True))
 
     num_traj = 1024  # Make sure it's divisible by num_workers
     gamma = 0.99
